@@ -1,0 +1,329 @@
+@page "/whatif"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<!--
+    WhatIfSimulator.razor: "사용자 X가 앱 Y에 접속하면 어떤 정책이 적용되나?" 시뮬레이션.
+
+    주의: 이 시뮬레이션은 로컬 로직으로 수행되므로 실제 Entra ID 의 결과와
+    완전히 동일하지 않을 수 있습니다. (복잡한 위치·장치 조건은 부분 평가)
+    정확한 결과는 Azure Portal > Entra ID > What If 기능을 사용하세요.
+-->
+
+<PageTitle>What-If 시뮬레이터 - CAPolicyLab</PageTitle>
+
+<h1 class="h3 mb-4">
+    <i class="bi bi-play-circle text-primary me-2"></i>What-If 시뮬레이터
+</h1>
+
+<div class="alert alert-info mb-4">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>안내:</strong> 이 시뮬레이터는 로컬에서 CA 정책 조건을 평가합니다.
+    위치·장치 규정 준수 조건은 부분적으로만 평가됩니다.
+    정확한 결과는 <a href="https://entra.microsoft.com" target="_blank" class="alert-link">Entra 관리 센터 What-If</a>를 사용하세요.
+</div>
+
+@if (_loadingData)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-3 text-muted">사용자 및 정책 데이터 불러오는 중...</p>
+    </div>
+}
+else if (_dataError is not null)
+{
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@_dataError
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        <!-- 입력 패널 -->
+        <div class="col-12 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header fw-semibold">
+                    <i class="bi bi-sliders me-2"></i>시뮬레이션 조건 설정
+                </div>
+                <div class="card-body">
+
+                    <!-- 사용자 선택 -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-person me-1"></i>사용자
+                        </label>
+                        <select class="form-select" @bind="_selectedUserId">
+                            <option value="">사용자를 선택하세요...</option>
+                            @foreach (var u in _users)
+                            {
+                                <option value="@u.Id">@u.DisplayName (@u.Upn)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- 앱 선택 -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-grid me-1"></i>대상 앱
+                        </label>
+                        <select class="form-select" @bind="_selectedAppId">
+                            <option value="">앱을 선택하세요...</option>
+                            <option value="All">모든 앱 (All)</option>
+                            @foreach (var a in _apps)
+                            {
+                                <option value="@a.Id">@a.DisplayName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- 플랫폼 (선택 사항) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-laptop me-1"></i>플랫폼 <small class="text-muted">(선택)</small>
+                        </label>
+                        <select class="form-select" @bind="_selectedPlatform">
+                            <option value="">지정하지 않음</option>
+                            <option value="windows">Windows</option>
+                            <option value="iOS">iOS</option>
+                            <option value="android">Android</option>
+                            <option value="macOS">macOS</option>
+                            <option value="linux">Linux</option>
+                        </select>
+                    </div>
+
+                    <!-- 장치 상태 (선택 사항) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-shield-check me-1"></i>장치 상태
+                        </label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="chkCompliant"
+                                   @bind="_isCompliantDevice" />
+                            <label class="form-check-label" for="chkCompliant">준수(Compliant) 디바이스</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="chkDomainJoined"
+                                   @bind="_isDomainJoined" />
+                            <label class="form-check-label" for="chkDomainJoined">도메인 가입 디바이스</label>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary w-100"
+                            @onclick="RunSimulationAsync"
+                            disabled="@(string.IsNullOrEmpty(_selectedUserId) || string.IsNullOrEmpty(_selectedAppId) || _simulating)">
+                        @if (_simulating)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-play-fill me-2"></i>
+                        }
+                        시뮬레이션 실행
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 결과 패널 -->
+        <div class="col-12 col-lg-7">
+            @if (_result is null)
+            {
+                <div class="card shadow-sm h-100 d-flex align-items-center justify-content-center"
+                     style="min-height: 300px">
+                    <div class="text-center text-muted p-4">
+                        <i class="bi bi-play-circle fs-1 mb-3 d-block text-primary opacity-50"></i>
+                        왼쪽에서 조건을 설정하고 시뮬레이션을 실행하세요
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- 결과 요약 배너 -->
+                <div class="alert @GetResultAlertClass() mb-3 d-flex align-items-center">
+                    <i class="@GetResultIcon() fs-3 me-3 flex-shrink-0"></i>
+                    <div>
+                        <div class="fw-bold fs-5">@_result.ResultDisplayName</div>
+                        <div class="small">
+                            @_result.Condition.UserDisplayName →
+                            @_result.Condition.ApplicationDisplayName
+                        </div>
+                        @if (_result.AggregatedControls.Count > 0)
+                        {
+                            <div class="mt-1">
+                                필요한 제어: <strong>@string.Join(", ", _result.AggregatedControls)</strong>
+                            </div>
+                        }
+                        @if (_result.BlockingPolicy is not null)
+                        {
+                            <div class="mt-1">
+                                차단 정책: <strong>@_result.BlockingPolicy.PolicyName</strong>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- 적용된 정책 목록 -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header">
+                        <i class="bi bi-check2-circle me-2 text-success"></i>
+                        적용된 정책
+                        <span class="badge bg-success ms-2">@(_result.AppliedPolicies.Count)개</span>
+                    </div>
+                    @if (_result.AppliedPolicies.Count == 0)
+                    {
+                        <div class="card-body text-muted">적용되는 정책이 없습니다.</div>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var ap in _result.AppliedPolicies)
+                            {
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <div class="fw-semibold">@ap.PolicyName</div>
+                                            <div class="small text-muted">@ap.AppliedReason</div>
+                                        </div>
+                                        <div class="text-end flex-shrink-0 ms-2">
+                                            <span class="badge @(ap.PolicyState == "enabled" ? "bg-success" : "bg-warning text-dark")">
+                                                @(ap.PolicyState == "enabled" ? "활성" : "보고 전용")
+                                            </span>
+                                            @foreach (var c in ap.GrantControls)
+                                            {
+                                                <span class="badge bg-primary ms-1">@c</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <!-- 미적용 정책 (접기/펼치기) -->
+                <div class="card shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center"
+                         style="cursor: pointer" @onclick="() => _showNotApplied = !_showNotApplied">
+                        <span>
+                            <i class="bi bi-x-circle me-2 text-secondary"></i>
+                            미적용 정책
+                            <span class="badge bg-secondary ms-2">@(_result.NotAppliedPolicies.Count)개</span>
+                        </span>
+                        <i class="bi @(_showNotApplied ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                    </div>
+                    @if (_showNotApplied)
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var np in _result.NotAppliedPolicies)
+                            {
+                                <li class="list-group-item list-group-item-secondary">
+                                    <div class="fw-semibold">@np.PolicyName</div>
+                                    <div class="small text-muted">@np.Reason</div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Inject] private GraphService GraphService { get; set; } = null!;
+    [Inject] private PolicyAnalyzerService Analyzer { get; set; } = null!;
+
+    private List<(string Id, string DisplayName, string Upn)> _users = [];
+    private List<(string Id, string DisplayName)> _apps = [];
+    private List<ConditionalAccessPolicyModel> _policies = [];
+
+    private string _selectedUserId = string.Empty;
+    private string _selectedAppId = string.Empty;
+    private string _selectedPlatform = string.Empty;
+    private bool _isCompliantDevice;
+    private bool _isDomainJoined;
+
+    private WhatIfResult? _result;
+    private bool _showNotApplied;
+    private bool _loadingData = true;
+    private bool _simulating;
+    private string? _dataError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // 병렬로 데이터 조회 (성능 최적화)
+            var policiesTask = GraphService.GetPoliciesAsync();
+            var usersTask = GraphService.GetUsersAsync();
+            var appsTask = GraphService.GetApplicationsAsync();
+
+            await Task.WhenAll(policiesTask, usersTask, appsTask);
+
+            _policies = await policiesTask;
+            _users = await usersTask;
+            _apps = await appsTask;
+        }
+        catch (GraphServiceException ex)
+        {
+            _dataError = ex.Message;
+        }
+        finally
+        {
+            _loadingData = false;
+        }
+    }
+
+    private async Task RunSimulationAsync()
+    {
+        if (string.IsNullOrEmpty(_selectedUserId) || string.IsNullOrEmpty(_selectedAppId))
+            return;
+
+        _simulating = true;
+        _result = null;
+
+        try
+        {
+            var user = _users.FirstOrDefault(u => u.Id == _selectedUserId);
+            var app = _apps.FirstOrDefault(a => a.Id == _selectedAppId);
+
+            var condition = new WhatIfCondition
+            {
+                UserId = _selectedUserId,
+                UserDisplayName = user.DisplayName,
+                ApplicationId = _selectedAppId,
+                ApplicationDisplayName = _selectedAppId == "All" ? "모든 앱" : app.DisplayName,
+                Platform = string.IsNullOrEmpty(_selectedPlatform) ? null : _selectedPlatform,
+                IsCompliantDevice = _isCompliantDevice,
+                IsDomainJoined = _isDomainJoined
+            };
+
+            // 사용자의 그룹 멤버십 조회 (정책 평가에 필요)
+            var userGroups = await GraphService.GetUserGroupIdsAsync(_selectedUserId);
+
+            // 로컬 시뮬레이션 실행
+            _result = Analyzer.Simulate(condition, _policies, userGroups);
+        }
+        finally
+        {
+            _simulating = false;
+        }
+    }
+
+    private string GetResultAlertClass() => _result?.AccessResult switch
+    {
+        WhatIfAccessResult.Allowed          => "alert-success",
+        WhatIfAccessResult.BlockedByPolicy  => "alert-danger",
+        WhatIfAccessResult.RequiresControls => "alert-warning",
+        _                                   => "alert-secondary"
+    };
+
+    private string GetResultIcon() => _result?.AccessResult switch
+    {
+        WhatIfAccessResult.Allowed          => "bi bi-check-circle-fill",
+        WhatIfAccessResult.BlockedByPolicy  => "bi bi-ban",
+        WhatIfAccessResult.RequiresControls => "bi bi-shield-exclamation",
+        _                                   => "bi bi-question-circle"
+    };
+}

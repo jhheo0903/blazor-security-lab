@@ -1,0 +1,132 @@
+<!--
+    PolicyCard.razor: CA 정책 요약 카드 컴포넌트
+
+    사용 방법:
+      <PolicyCard Policy="@policy" OnSelect="HandleSelect" />
+-->
+
+@if (Policy is not null)
+{
+    <div class="card policy-card h-100 @(IsSelected ? "border-primary shadow" : "")"
+         style="cursor: pointer"
+         @onclick="() => OnSelect.InvokeAsync(Policy)">
+
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <!-- 정책 이름 -->
+            <span class="fw-semibold text-truncate" title="@Policy.DisplayName">
+                @Policy.DisplayName
+            </span>
+            <!-- 상태 배지 (활성/비활성/보고 전용) -->
+            <span class="badge @Policy.StateBadgeClass ms-2 flex-shrink-0">
+                @Policy.StateDisplayName
+            </span>
+        </div>
+
+        <div class="card-body">
+            <!-- 대상 요약 -->
+            <div class="row g-2 small text-muted">
+                <div class="col-6">
+                    <i class="bi bi-people me-1"></i>
+                    @if (Policy.TargetsAllUsers)
+                    {
+                        <span>전체 사용자</span>
+                    }
+                    else
+                    {
+                        <span>@(Policy.IncludeUsers.Count + Policy.IncludeGroups.Count)개 사용자/그룹</span>
+                    }
+                </div>
+                <div class="col-6">
+                    <i class="bi bi-grid me-1"></i>
+                    @if (Policy.TargetsAllApps)
+                    {
+                        <span>모든 앱</span>
+                    }
+                    else
+                    {
+                        <span>@(Policy.IncludeApplications.Count)개 앱</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Grant Controls 뱃지 -->
+            @if (Policy.GrantControls.Count > 0)
+            {
+                <div class="mt-2 d-flex flex-wrap gap-1">
+                    @foreach (var control in Policy.GrantControls)
+                    {
+                        <span class="badge @GetControlBadgeClass(control)">
+                            @GetControlIcon(control) @GetControlLabel(control)
+                        </span>
+                    }
+                </div>
+            }
+            else if (!Policy.IsBlockPolicy)
+            {
+                <div class="mt-2">
+                    <span class="badge bg-secondary">제어 없음 (허용)</span>
+                </div>
+            }
+        </div>
+
+        <!-- 수정 시간 -->
+        @if (Policy.ModifiedDateTime.HasValue)
+        {
+            <div class="card-footer text-muted small">
+                <i class="bi bi-clock me-1"></i>
+                수정: @Policy.ModifiedDateTime.Value.LocalDateTime.ToString("yyyy-MM-dd HH:mm")
+            </div>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>표시할 정책 모델</summary>
+    [Parameter, EditorRequired]
+    public ConditionalAccessPolicyModel? Policy { get; set; }
+
+    /// <summary>카드 클릭 시 호출될 콜백</summary>
+    [Parameter]
+    public EventCallback<ConditionalAccessPolicyModel> OnSelect { get; set; }
+
+    /// <summary>현재 선택된 정책인지 (선택 강조 표시)</summary>
+    [Parameter]
+    public bool IsSelected { get; set; }
+
+    // Grant Control 에 따른 Bootstrap 배지 색상
+    private static string GetControlBadgeClass(string control) => control switch
+    {
+        "mfa"                  => "bg-primary",
+        "block"                => "bg-danger",
+        "compliantDevice"      => "bg-success",
+        "domainJoinedDevice"   => "bg-info text-dark",
+        "approvedApplication"  => "bg-warning text-dark",
+        "passwordChange"       => "bg-secondary",
+        _                      => "bg-secondary"
+    };
+
+    // Grant Control 의 Bootstrap Icon
+    private static string GetControlIcon(string control) => control switch
+    {
+        "mfa"                  => "🔐",
+        "block"                => "🚫",
+        "compliantDevice"      => "💻",
+        "domainJoinedDevice"   => "🏢",
+        "approvedApplication"  => "✅",
+        "passwordChange"       => "🔑",
+        _                      => "⚙️"
+    };
+
+    // Grant Control 의 한글 레이블
+    private static string GetControlLabel(string control) => control switch
+    {
+        "mfa"                  => "MFA",
+        "block"                => "차단",
+        "compliantDevice"      => "준수 디바이스",
+        "domainJoinedDevice"   => "도메인 가입",
+        "approvedApplication"  => "승인된 앱",
+        "compliantApplication" => "앱 보호 정책",
+        "passwordChange"       => "비밀번호 변경",
+        _                      => control
+    };
+}

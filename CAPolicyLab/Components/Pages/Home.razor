@@ -1,0 +1,299 @@
+@page "/"
+@rendermode InteractiveServer
+@* [Authorize] 없음 → 누구나 접근 가능한 공개 랜딩 페이지 *@
+
+<!--
+    Home.razor: 공개 랜딩 페이지.
+
+    - 로그인 전: Microsoft 로그인 버튼 + 앱 소개
+    - 로그인 후: 대시보드 (CA 정책 현황)
+
+    AuthorizeView 를 사용해 인증 상태에 따라 다른 UI 를 렌더링한다.
+    FallbackPolicy 를 설정하지 않았으므로 미인증 사용자도 이 페이지에 접근 가능하다.
+-->
+
+<PageTitle>CAPolicyLab - CA Policy Visualizer</PageTitle>
+
+<!-- AuthorizeView: Authorized / NotAuthorized / Authorizing 블록으로 분기 -->
+<AuthorizeView>
+
+    <!-- ── 인증된 사용자: 대시보드 ── -->
+    <Authorized>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-speedometer2 text-primary me-2"></i>대시보드
+            </h1>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="RefreshAsync" disabled="@_loading">
+                <i class="bi bi-arrow-clockwise me-1 @(_loading ? "spin" : "")"></i>새로고침
+            </button>
+        </div>
+
+        @if (_loading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-3 text-muted">Graph API 에서 정책을 불러오는 중...</p>
+            </div>
+        }
+        else if (_error is not null)
+        {
+            <div class="alert alert-danger d-flex align-items-start">
+                <i class="bi bi-exclamation-triangle-fill me-3 fs-4 flex-shrink-0"></i>
+                <div>
+                    <strong>정책을 불러올 수 없습니다</strong>
+                    <p class="mb-1 mt-1">@_error</p>
+                    <small class="text-muted">
+                        Azure Portal &gt; Entra ID &gt; 앱 등록 &gt; API 권한에서
+                        <strong>Policy.Read.All</strong>, <strong>Directory.Read.All</strong> 권한에
+                        관리자 동의가 필요합니다.
+                    </small>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- KPI 카드 행 -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-lg-3">
+                    <div class="card border-0 shadow-sm text-center kpi-card">
+                        <div class="card-body">
+                            <div class="kpi-icon bg-primary-subtle text-primary">
+                                <i class="bi bi-shield-check"></i>
+                            </div>
+                            <div class="kpi-value">@_policies.Count</div>
+                            <div class="kpi-label">전체 정책</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card border-0 shadow-sm text-center kpi-card">
+                        <div class="card-body">
+                            <div class="kpi-icon bg-success-subtle text-success">
+                                <i class="bi bi-check-circle"></i>
+                            </div>
+                            <div class="kpi-value text-success">@_policies.Count(p => p.IsEnabled)</div>
+                            <div class="kpi-label">활성 정책</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card border-0 shadow-sm text-center kpi-card">
+                        <div class="card-body">
+                            <div class="kpi-icon bg-warning-subtle text-warning">
+                                <i class="bi bi-eye"></i>
+                            </div>
+                            <div class="kpi-value text-warning">@_policies.Count(p => p.IsReportOnly)</div>
+                            <div class="kpi-label">보고 전용</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="card border-0 shadow-sm text-center kpi-card @(_conflictCount > 0 ? "border-danger" : "")">
+                        <div class="card-body">
+                            <div class="kpi-icon @(_conflictCount > 0 ? "bg-danger-subtle text-danger" : "bg-secondary-subtle text-secondary")">
+                                <i class="bi bi-exclamation-triangle"></i>
+                            </div>
+                            <div class="kpi-value @(_conflictCount > 0 ? "text-danger" : "")">@_conflictCount</div>
+                            <div class="kpi-label">감지된 충돌</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grant Control 분포 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <i class="bi bi-bar-chart me-2"></i>Grant Control 분포
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        @foreach (var item in GetControlStats())
+                        {
+                            <div class="col-auto">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded bg-light">
+                                    <span class="badge @item.BadgeClass">@item.Label</span>
+                                    <span class="fw-bold">@item.Count</span>
+                                    <span class="text-muted small">개 정책</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- 정책 카드 그리드 -->
+            <h2 class="h5 mb-3">
+                <i class="bi bi-list-ul me-2"></i>정책 목록
+                <span class="badge bg-secondary ms-2">@_policies.Count</span>
+            </h2>
+
+            @if (_policies.Count == 0)
+            {
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>조건부 액세스 정책이 없습니다.
+                </div>
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var policy in _policies)
+                    {
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <PolicyCard Policy="@policy" />
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </Authorized>
+
+    <!-- ── 인증 확인 중 ── -->
+    <Authorizing>
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3 text-muted">인증 상태 확인 중...</p>
+        </div>
+    </Authorizing>
+
+    <!-- ── 미인증 사용자: 랜딩 페이지 ── -->
+    <NotAuthorized>
+        <div class="landing-page d-flex flex-column align-items-center justify-content-center py-5">
+
+            <!-- 로고 / 타이틀 -->
+            <div class="text-center mb-5">
+                <div class="landing-icon mb-4">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <h1 class="display-5 fw-bold">CAPolicyLab</h1>
+                <p class="lead text-muted">Conditional Access Policy Visualizer</p>
+                <p class="text-muted">
+                    Microsoft Entra ID 의 조건부 액세스 정책을 시각화하고<br/>
+                    충돌을 감지하며 What-If 시나리오를 시뮬레이션합니다.
+                </p>
+            </div>
+
+            <!-- 로그인 버튼 -->
+            <a href="MicrosoftIdentity/Account/SignIn" class="btn btn-primary btn-lg px-5 py-3 shadow">
+                <svg class="me-2" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 23 23">
+                    <path fill="#f25022" d="M0 0h11v11H0z"/>
+                    <path fill="#7fba00" d="M12 0h11v11H12z"/>
+                    <path fill="#00a4ef" d="M0 12h11v11H0z"/>
+                    <path fill="#ffb900" d="M12 12h11v11H12z"/>
+                </svg>
+                Microsoft 계정으로 로그인
+            </a>
+
+            <p class="text-muted small mt-3">
+                Entra ID 테넌트 관리자 계정 또는
+                <strong>Policy.Read.All</strong> 권한이 있는 계정으로 로그인하세요.
+            </p>
+
+            <!-- 기능 소개 카드 -->
+            <div class="row g-3 mt-5 w-100" style="max-width: 900px">
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <i class="bi bi-diagram-3 text-primary fs-2 mb-2"></i>
+                        <div class="fw-semibold small">정책 시각화</div>
+                        <div class="text-muted" style="font-size:0.8rem">Mermaid 플로우차트</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <i class="bi bi-exclamation-triangle text-warning fs-2 mb-2"></i>
+                        <div class="fw-semibold small">충돌 감지</div>
+                        <div class="text-muted" style="font-size:0.8rem">MFA·Block 불일치</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <i class="bi bi-play-circle text-success fs-2 mb-2"></i>
+                        <div class="fw-semibold small">What-If 시뮬레이터</div>
+                        <div class="text-muted" style="font-size:0.8rem">접근 정책 예측</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card border-0 bg-light text-center p-3">
+                        <i class="bi bi-funnel text-info fs-2 mb-2"></i>
+                        <div class="fw-semibold small">정책 필터</div>
+                        <div class="text-muted" style="font-size:0.8rem">사용자·앱 기준</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </NotAuthorized>
+
+</AuthorizeView>
+
+@code {
+    [Inject] private GraphService GraphService { get; set; } = null!;
+    [Inject] private PolicyAnalyzerService Analyzer { get; set; } = null!;
+
+    private List<ConditionalAccessPolicyModel> _policies = [];
+    private int _conflictCount;
+    private bool _loading;      // 로그인 후에만 실행되므로 초기값 false
+    private string? _error;
+
+    // OnInitializedAsync 에서 곧바로 Graph 를 호출하면 미인증 사용자에게도
+    // 실행되어 예외가 발생하므로, 인증 상태를 확인한 뒤 로드한다.
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthStateTask is null) return;
+
+        var authState = await AuthStateTask;
+        // 인증된 사용자일 때만 Graph API 호출
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            await LoadDataAsync();
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            _policies = await GraphService.GetPoliciesAsync();
+            _conflictCount = Analyzer.DetectConflicts(_policies).Count;
+        }
+        catch (GraphServiceException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        GraphService.ClearCache();
+        await LoadDataAsync();
+    }
+
+    private IEnumerable<(string Label, string BadgeClass, int Count)> GetControlStats()
+    {
+        var controls = new[]
+        {
+            ("MFA",           "bg-primary",          "mfa"),
+            ("차단",          "bg-danger",            "block"),
+            ("준수 디바이스", "bg-success",           "compliantDevice"),
+            ("도메인 가입",   "bg-info text-dark",    "domainJoinedDevice"),
+            ("승인된 앱",     "bg-warning text-dark", "approvedApplication"),
+        };
+
+        foreach (var (label, badge, key) in controls)
+        {
+            int count = _policies.Count(p => p.GrantControls.Contains(key));
+            if (count > 0) yield return (label, badge, count);
+        }
+
+        int noControl = _policies.Count(p => p.GrantControls.Count == 0 && !p.IsBlockPolicy);
+        if (noControl > 0) yield return ("제어 없음", "bg-secondary", noControl);
+    }
+}

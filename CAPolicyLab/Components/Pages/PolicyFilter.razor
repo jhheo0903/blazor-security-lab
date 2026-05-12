@@ -1,0 +1,269 @@
+@page "/filter"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<!--
+    PolicyFilter.razor: 사용자/그룹/앱을 기준으로 적용될 정책을 필터링하는 페이지.
+
+    사용 시나리오:
+      - "특정 앱에 어떤 정책이 적용되나?" → 앱 ID 입력
+      - "이 그룹에 적용되는 정책은?" → 그룹 ID 입력
+      - 텍스트 검색으로 정책 이름 빠르게 찾기
+-->
+
+<PageTitle>정책 필터 - CAPolicyLab</PageTitle>
+
+<h1 class="h3 mb-4">
+    <i class="bi bi-funnel text-primary me-2"></i>정책 필터
+</h1>
+
+@if (_loading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-3 text-muted">정책 불러오는 중...</p>
+    </div>
+}
+else if (_error is not null)
+{
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@_error
+    </div>
+}
+else
+{
+    <!-- 필터 패널 -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <i class="bi bi-search me-2"></i>필터 조건
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- 텍스트 검색 -->
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-semibold">정책 이름 검색</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control"
+                               placeholder="정책 이름을 입력하세요..."
+                               @bind="_nameFilter" @bind:event="oninput" />
+                        @if (!string.IsNullOrEmpty(_nameFilter))
+                        {
+                            <button class="btn btn-outline-secondary" @onclick="() => _nameFilter = string.Empty">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <!-- 상태 필터 -->
+                <div class="col-12 col-md-3">
+                    <label class="form-label fw-semibold">상태</label>
+                    <select class="form-select" @bind="_stateFilter">
+                        <option value="">전체</option>
+                        <option value="enabled">활성</option>
+                        <option value="enabledForReportingButNotEnforced">보고 전용</option>
+                        <option value="disabled">비활성</option>
+                    </select>
+                </div>
+
+                <!-- Grant Control 필터 -->
+                <div class="col-12 col-md-3">
+                    <label class="form-label fw-semibold">Grant Control</label>
+                    <select class="form-select" @bind="_controlFilter">
+                        <option value="">전체</option>
+                        <option value="mfa">MFA 요구</option>
+                        <option value="block">차단</option>
+                        <option value="compliantDevice">준수 디바이스</option>
+                        <option value="domainJoinedDevice">도메인 가입</option>
+                        <option value="none">제어 없음</option>
+                    </select>
+                </div>
+
+                <!-- 앱 ID 필터 -->
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-semibold">
+                        앱 ID 포함 여부
+                        <small class="text-muted fw-normal">(특정 앱에 적용되는 정책)</small>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-grid"></i></span>
+                        <input type="text" class="form-control"
+                               placeholder="앱 ID 또는 All..."
+                               @bind="_appFilter" @bind:event="oninput" />
+                    </div>
+                </div>
+
+                <!-- 사용자/그룹 ID 필터 -->
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-semibold">
+                        사용자/그룹 ID 포함 여부
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-people"></i></span>
+                        <input type="text" class="form-control"
+                               placeholder="사용자 또는 그룹 objectId..."
+                               @bind="_userGroupFilter" @bind:event="oninput" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 결과 -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 mb-0">
+            필터 결과
+            <span class="badge bg-primary ms-2">@FilteredPolicies.Count()개</span>
+        </h2>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="ClearFilters">
+            <i class="bi bi-x-circle me-1"></i>필터 초기화
+        </button>
+    </div>
+
+    @if (!FilteredPolicies.Any())
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-search me-2"></i>
+            조건에 맞는 정책이 없습니다. 필터를 변경해 보세요.
+        </div>
+    }
+    else
+    {
+        <!-- 테이블 형식으로 표시 -->
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>정책 이름</th>
+                            <th>상태</th>
+                            <th>대상 사용자</th>
+                            <th>대상 앱</th>
+                            <th>Grant Controls</th>
+                            <th>수정일</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in FilteredPolicies)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@p.DisplayName</td>
+                                <td>
+                                    <span class="badge @p.StateBadgeClass">@p.StateDisplayName</span>
+                                </td>
+                                <td class="small">
+                                    @if (p.TargetsAllUsers)
+                                    {
+                                        <span class="text-success">전체 사용자</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@(p.IncludeUsers.Count + p.IncludeGroups.Count)개</span>
+                                    }
+                                    @if (p.ExcludeUsers.Count + p.ExcludeGroups.Count > 0)
+                                    {
+                                        <span class="text-muted"> (제외 @(p.ExcludeUsers.Count + p.ExcludeGroups.Count)개)</span>
+                                    }
+                                </td>
+                                <td class="small">
+                                    @if (p.TargetsAllApps)
+                                    {
+                                        <span class="text-success">모든 앱</span>
+                                    }
+                                    else
+                                    {
+                                        @string.Join(", ", p.IncludeApplications.Take(2))
+                                        @if (p.IncludeApplications.Count > 2)
+                                        {
+                                            <span class="text-muted"> 외 @(p.IncludeApplications.Count - 2)개</span>
+                                        }
+                                    }
+                                </td>
+                                <td>
+                                    @if (p.GrantControls.Count == 0)
+                                    {
+                                        <span class="badge bg-secondary">없음</span>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var c in p.GrantControls)
+                                        {
+                                            <span class="badge bg-primary me-1">@c</span>
+                                        }
+                                    }
+                                </td>
+                                <td class="small text-muted">
+                                    @p.ModifiedDateTime?.LocalDateTime.ToString("yyyy-MM-dd")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Inject] private GraphService GraphService { get; set; } = null!;
+
+    private List<ConditionalAccessPolicyModel> _policies = [];
+    private string _nameFilter = string.Empty;
+    private string _stateFilter = string.Empty;
+    private string _controlFilter = string.Empty;
+    private string _appFilter = string.Empty;
+    private string _userGroupFilter = string.Empty;
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _policies = await GraphService.GetPoliciesAsync();
+        }
+        catch (GraphServiceException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    // 모든 필터를 AND 조건으로 적용한 정책 목록
+    private IEnumerable<ConditionalAccessPolicyModel> FilteredPolicies => _policies
+        .Where(p =>
+            // 이름 검색
+            (string.IsNullOrEmpty(_nameFilter) ||
+             p.DisplayName.Contains(_nameFilter, StringComparison.OrdinalIgnoreCase))
+            // 상태 필터
+            && (string.IsNullOrEmpty(_stateFilter) || p.State == _stateFilter)
+            // Grant Control 필터
+            && (string.IsNullOrEmpty(_controlFilter) || MatchesControlFilter(p, _controlFilter))
+            // 앱 ID 포함 여부
+            && (string.IsNullOrEmpty(_appFilter) ||
+                p.IncludeApplications.Any(a => a.Contains(_appFilter, StringComparison.OrdinalIgnoreCase)))
+            // 사용자/그룹 ID 포함 여부
+            && (string.IsNullOrEmpty(_userGroupFilter) ||
+                p.IncludeUsers.Any(u => u.Contains(_userGroupFilter, StringComparison.OrdinalIgnoreCase)) ||
+                p.IncludeGroups.Any(g => g.Contains(_userGroupFilter, StringComparison.OrdinalIgnoreCase)))
+        );
+
+    private static bool MatchesControlFilter(ConditionalAccessPolicyModel p, string filter) => filter switch
+    {
+        "none" => p.GrantControls.Count == 0 && !p.IsBlockPolicy,
+        _      => p.GrantControls.Contains(filter)
+    };
+
+    private void ClearFilters()
+    {
+        _nameFilter = string.Empty;
+        _stateFilter = string.Empty;
+        _controlFilter = string.Empty;
+        _appFilter = string.Empty;
+        _userGroupFilter = string.Empty;
+    }
+}

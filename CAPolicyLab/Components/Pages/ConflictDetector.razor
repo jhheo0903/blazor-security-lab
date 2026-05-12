@@ -1,0 +1,237 @@
+@page "/conflicts"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<!--
+    ConflictDetector.razor: CA 정책 간 잠재적 충돌을 감지하고 표시하는 페이지.
+
+    충돌 감지 로직 (PolicyAnalyzerService):
+      - 두 정책이 동일 사용자·앱 범위에 적용되면서 상반된 제어를 요구하는 경우
+      - 심각도: High(차단 vs 허용), Medium(MFA 불일치), Low(중복 정책)
+-->
+
+<PageTitle>충돌 감지 - CAPolicyLab</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="bi bi-exclamation-triangle text-warning me-2"></i>충돌 감지
+    </h1>
+    <button class="btn btn-outline-secondary btn-sm" @onclick="AnalyzeAsync" disabled="@_loading">
+        <i class="bi bi-arrow-clockwise me-1 @(_loading ? "spin" : "")"></i>재분석
+    </button>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-warning" role="status"></div>
+        <p class="mt-3 text-muted">정책 분석 중...</p>
+    </div>
+}
+else if (_error is not null)
+{
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@_error
+    </div>
+}
+else
+{
+    <!-- 요약 배너 -->
+    @if (_conflicts.Count == 0)
+    {
+        <div class="alert alert-success d-flex align-items-center mb-4">
+            <i class="bi bi-check-circle-fill fs-3 me-3 flex-shrink-0"></i>
+            <div>
+                <div class="fw-bold">충돌이 감지되지 않았습니다</div>
+                <div class="small">
+                    @_policies.Count(p => p.State != "disabled")개의 활성/보고 전용 정책을 분석한 결과,
+                    잠재적 충돌이 없습니다.
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning d-flex align-items-center mb-4">
+            <i class="bi bi-exclamation-triangle-fill fs-3 me-3 flex-shrink-0"></i>
+            <div>
+                <div class="fw-bold">@(_conflicts.Count)개의 잠재적 충돌이 감지되었습니다</div>
+                <div class="small">
+                    높음: @_conflicts.Count(c => c.Severity == ConflictSeverity.High)개 /
+                    중간: @_conflicts.Count(c => c.Severity == ConflictSeverity.Medium)개 /
+                    낮음: @_conflicts.Count(c => c.Severity == ConflictSeverity.Low)개
+                </div>
+            </div>
+        </div>
+
+        <!-- 심각도 필터 -->
+        <div class="btn-group mb-3" role="group">
+            <input type="radio" class="btn-check" name="severity" id="sev-all" autocomplete="off"
+                   checked="@(_severityFilter is null)"
+                   @onchange="() => _severityFilter = null" />
+            <label class="btn btn-outline-secondary" for="sev-all">
+                전체 <span class="badge bg-secondary ms-1">@_conflicts.Count</span>
+            </label>
+
+            <input type="radio" class="btn-check" name="severity" id="sev-high" autocomplete="off"
+                   checked="@(_severityFilter == ConflictSeverity.High)"
+                   @onchange="() => _severityFilter = ConflictSeverity.High" />
+            <label class="btn btn-outline-danger" for="sev-high">
+                높음 <span class="badge bg-danger ms-1">@_conflicts.Count(c => c.Severity == ConflictSeverity.High)</span>
+            </label>
+
+            <input type="radio" class="btn-check" name="severity" id="sev-med" autocomplete="off"
+                   checked="@(_severityFilter == ConflictSeverity.Medium)"
+                   @onchange="() => _severityFilter = ConflictSeverity.Medium" />
+            <label class="btn btn-outline-warning" for="sev-med">
+                중간 <span class="badge bg-warning text-dark ms-1">@_conflicts.Count(c => c.Severity == ConflictSeverity.Medium)</span>
+            </label>
+
+            <input type="radio" class="btn-check" name="severity" id="sev-low" autocomplete="off"
+                   checked="@(_severityFilter == ConflictSeverity.Low)"
+                   @onchange="() => _severityFilter = ConflictSeverity.Low" />
+            <label class="btn btn-outline-info" for="sev-low">
+                낮음 <span class="badge bg-info text-dark ms-1">@_conflicts.Count(c => c.Severity == ConflictSeverity.Low)</span>
+            </label>
+        </div>
+    }
+
+    <!-- 충돌 카드 목록 -->
+    @foreach (var conflict in FilteredConflicts)
+    {
+        <div class="card shadow-sm mb-3 border-start border-4 @GetBorderClass(conflict.Severity)">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge @conflict.SeverityBadgeClass me-2">@conflict.Severity</span>
+                    <span class="badge bg-secondary">@conflict.TypeDisplayName</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- 충돌 설명 -->
+                <p class="mb-3">@conflict.Description</p>
+
+                <!-- 충돌 당사자 정책 -->
+                <div class="row g-2 mb-3">
+                    <div class="col-12 col-md-6">
+                        <div class="card bg-light border-0">
+                            <div class="card-body py-2 px-3">
+                                <div class="small text-muted">정책 A</div>
+                                <div class="fw-semibold">@conflict.PolicyA.DisplayName</div>
+                                <span class="badge @conflict.PolicyA.StateBadgeClass mt-1">
+                                    @conflict.PolicyA.StateDisplayName
+                                </span>
+                                @foreach (var c in conflict.PolicyA.GrantControls)
+                                {
+                                    <span class="badge bg-primary ms-1 mt-1">@c</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="card bg-light border-0">
+                            <div class="card-body py-2 px-3">
+                                <div class="small text-muted">정책 B</div>
+                                <div class="fw-semibold">@conflict.PolicyB.DisplayName</div>
+                                <span class="badge @conflict.PolicyB.StateBadgeClass mt-1">
+                                    @conflict.PolicyB.StateDisplayName
+                                </span>
+                                @foreach (var c in conflict.PolicyB.GrantControls)
+                                {
+                                    <span class="badge bg-primary ms-1 mt-1">@c</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 겹치는 범위 -->
+                @if (conflict.OverlappingApplications.Count > 0 ||
+                     conflict.OverlappingUsers.Count > 0 ||
+                     conflict.OverlappingGroups.Count > 0)
+                {
+                    <div class="small text-muted">
+                        <strong>겹치는 범위:</strong>
+                        @if (conflict.OverlappingApplications.Count > 0)
+                        {
+                            <span class="me-2">앱: @string.Join(", ", conflict.OverlappingApplications.Take(3))</span>
+                        }
+                        @if (conflict.OverlappingUsers.Count > 0)
+                        {
+                            <span class="me-2">사용자: @(conflict.OverlappingUsers.Count)개</span>
+                        }
+                        @if (conflict.OverlappingGroups.Count > 0)
+                        {
+                            <span>그룹: @(conflict.OverlappingGroups.Count)개</span>
+                        }
+                    </div>
+                }
+                else if (conflict.PolicyA.TargetsAllUsers || conflict.PolicyB.TargetsAllUsers)
+                {
+                    <div class="small text-muted">
+                        <strong>겹치는 범위:</strong> 두 정책 모두 전체 사용자를 대상으로 함
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- 분석 정보 푸터 -->
+    <div class="card bg-light border-0 mt-4">
+        <div class="card-body small text-muted">
+            <i class="bi bi-info-circle me-2"></i>
+            총 @(_policies.Count)개 정책 중 @(_policies.Count(p => p.State != "disabled"))개 활성/보고 전용 정책을 분석했습니다.
+            비활성 정책은 분석에서 제외됩니다.
+        </div>
+    </div>
+}
+
+@code {
+    [Inject] private GraphService GraphService { get; set; } = null!;
+    [Inject] private PolicyAnalyzerService Analyzer { get; set; } = null!;
+
+    private List<ConditionalAccessPolicyModel> _policies = [];
+    private List<PolicyConflict> _conflicts = [];
+    private ConflictSeverity? _severityFilter;
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AnalyzeAsync();
+    }
+
+    private async Task AnalyzeAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            GraphService.ClearCache();
+            _policies = await GraphService.GetPoliciesAsync();
+            // 충돌 감지 실행 (PolicyAnalyzerService 의 DetectConflicts)
+            _conflicts = Analyzer.DetectConflicts(_policies);
+        }
+        catch (GraphServiceException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private IEnumerable<PolicyConflict> FilteredConflicts =>
+        _severityFilter is null
+            ? _conflicts
+            : _conflicts.Where(c => c.Severity == _severityFilter);
+
+    private static string GetBorderClass(ConflictSeverity severity) => severity switch
+    {
+        ConflictSeverity.High   => "border-danger",
+        ConflictSeverity.Medium => "border-warning",
+        ConflictSeverity.Low    => "border-info",
+        _                       => "border-secondary"
+    };
+}

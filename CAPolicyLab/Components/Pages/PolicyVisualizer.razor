@@ -1,0 +1,239 @@
+@page "/visualizer"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<!--
+    PolicyVisualizer.razor: 정책을 Mermaid.js 플로우차트로 시각화하는 페이지.
+
+    동작 흐름:
+      1. 페이지 로드 시 모든 CA 정책 조회
+      2. 좌측에서 정책 선택
+      3. PolicyAnalyzerService.GenerateMermaidDiagram() 으로 Mermaid 텍스트 생성
+      4. MermaidDiagram 컴포넌트가 SVG 렌더링
+-->
+
+<PageTitle>정책 시각화 - CAPolicyLab</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="bi bi-diagram-3 text-primary me-2"></i>정책 시각화
+    </h1>
+    <!-- 전체 개요 / 단일 정책 토글 -->
+    <div class="btn-group btn-group-sm">
+        <button class="btn @(_showOverview ? "btn-primary" : "btn-outline-primary")"
+                @onclick="() => _showOverview = true">
+            <i class="bi bi-diagram-2 me-1"></i>전체 개요
+        </button>
+        <button class="btn @(!_showOverview ? "btn-primary" : "btn-outline-primary")"
+                @onclick="() => _showOverview = false">
+            <i class="bi bi-zoom-in me-1"></i>정책 상세
+        </button>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-3 text-muted">정책 불러오는 중...</p>
+    </div>
+}
+else if (_error is not null)
+{
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@_error
+    </div>
+}
+else if (_showOverview)
+{
+    <!-- 전체 개요 다이어그램 -->
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <i class="bi bi-diagram-2 me-2"></i>전체 정책 개요
+            <span class="badge bg-secondary ms-2">@(_policies.Count)개 정책</span>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info small mb-3">
+                <i class="bi bi-info-circle me-2"></i>
+                색상 범례: <span class="badge bg-danger">차단</span>
+                <span class="badge bg-primary ms-1">MFA</span>
+                <span class="badge bg-success ms-1">허용</span>
+                <span class="badge bg-warning text-dark ms-1">보고 전용</span>
+                <span class="badge bg-secondary ms-1">비활성</span>
+            </div>
+            <MermaidDiagram Definition="@_overviewDiagram" />
+        </div>
+    </div>
+}
+else
+{
+    <!-- 단일 정책 상세 뷰 -->
+    <div class="row g-3">
+        <!-- 왼쪽: 정책 선택 목록 -->
+        <div class="col-12 col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header">정책 선택</div>
+                <div class="card-body p-0" style="max-height: 70vh; overflow-y: auto;">
+                    @foreach (var policy in _policies)
+                    {
+                        <button class="list-group-item list-group-item-action border-0 px-3 py-2
+                                       @(_selectedPolicy?.Id == policy.Id ? "active" : "")"
+                                @onclick="() => SelectPolicy(policy)">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-truncate small fw-semibold">@policy.DisplayName</span>
+                                <span class="badge @policy.StateBadgeClass ms-2 flex-shrink-0">
+                                    @policy.StateDisplayName
+                                </span>
+                            </div>
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- 오른쪽: 다이어그램 + 정책 상세 -->
+        <div class="col-12 col-lg-8">
+            @if (_selectedPolicy is null)
+            {
+                <div class="card shadow-sm h-100 d-flex align-items-center justify-content-center"
+                     style="min-height: 300px">
+                    <div class="text-center text-muted p-4">
+                        <i class="bi bi-arrow-left-circle fs-1 mb-3 d-block"></i>
+                        왼쪽 목록에서 정책을 선택하세요
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- 플로우차트 -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header d-flex justify-content-between">
+                        <span>
+                            <i class="bi bi-diagram-3 me-2"></i>
+                            @_selectedPolicy.DisplayName
+                        </span>
+                        <span class="badge @_selectedPolicy.StateBadgeClass">
+                            @_selectedPolicy.StateDisplayName
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <MermaidDiagram Definition="@_selectedDiagram" />
+                    </div>
+                </div>
+
+                <!-- 정책 조건 상세 테이블 -->
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <i class="bi bi-list-columns me-2"></i>정책 조건 상세
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm table-hover mb-0">
+                            <tbody>
+                                <tr>
+                                    <th class="w-35 text-muted">포함 사용자</th>
+                                    <td>@FormatList(_selectedPolicy.IncludeUsers, "All → 전체 사용자")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">제외 사용자</th>
+                                    <td>@FormatList(_selectedPolicy.ExcludeUsers)</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">포함 그룹</th>
+                                    <td>@FormatList(_selectedPolicy.IncludeGroups)</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">제외 그룹</th>
+                                    <td>@FormatList(_selectedPolicy.ExcludeGroups)</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">포함 앱</th>
+                                    <td>@FormatList(_selectedPolicy.IncludeApplications, "All → 모든 앱")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">포함 플랫폼</th>
+                                    <td>@FormatList(_selectedPolicy.IncludePlatforms, "(모든 플랫폼)")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Grant Controls</th>
+                                    <td>
+                                        @if (_selectedPolicy.GrantControls.Count > 0)
+                                        {
+                                            @string.Join($" {_selectedPolicy.GrantOperator} ", _selectedPolicy.GrantControls)
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">(없음)</span>
+                                        }
+                                    </td>
+                                </tr>
+                                @if (_selectedPolicy.SignInFrequencyEnabled)
+                                {
+                                    <tr>
+                                        <th class="text-muted">로그인 빈도</th>
+                                        <td>@_selectedPolicy.SignInFrequencyValue @_selectedPolicy.SignInFrequencyType</td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <th class="text-muted">생성일</th>
+                                    <td>@_selectedPolicy.CreatedDateTime?.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">수정일</th>
+                                    <td>@_selectedPolicy.ModifiedDateTime?.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Inject] private GraphService GraphService { get; set; } = null!;
+    [Inject] private PolicyAnalyzerService Analyzer { get; set; } = null!;
+
+    private List<ConditionalAccessPolicyModel> _policies = [];
+    private ConditionalAccessPolicyModel? _selectedPolicy;
+    private string _selectedDiagram = string.Empty;
+    private string _overviewDiagram = string.Empty;
+    private bool _showOverview = true;
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _policies = await GraphService.GetPoliciesAsync();
+            _overviewDiagram = Analyzer.GenerateOverviewDiagram(_policies);
+        }
+        catch (GraphServiceException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void SelectPolicy(ConditionalAccessPolicyModel policy)
+    {
+        _selectedPolicy = policy;
+        // Mermaid 다이어그램 텍스트 생성 (PolicyAnalyzerService 에서 변환)
+        _selectedDiagram = Analyzer.GenerateMermaidDiagram(policy);
+        _showOverview = false;
+    }
+
+    // 목록을 읽기 쉬운 문자열로 변환
+    private static string FormatList(List<string> list, string emptyLabel = "(없음)")
+    {
+        if (list.Count == 0) return emptyLabel;
+        if (list.Count == 1 && list[0] == "All") return emptyLabel.StartsWith("All") ? emptyLabel : "전체";
+        return list.Count <= 3
+            ? string.Join(", ", list)
+            : $"{string.Join(", ", list.Take(3))} 외 {list.Count - 3}개";
+    }
+}

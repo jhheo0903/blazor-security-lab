@@ -1,0 +1,66 @@
+<!-- NavMenu.razor: 좌측 사이드바 네비게이션 -->
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="">
+            <i class="bi bi-shield-lock-fill me-2"></i>CAPolicyLab
+        </a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="nav flex-column">
+
+        <!-- 대시보드 -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <i class="bi bi-speedometer2 me-2"></i>대시보드
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3 mt-2">
+            <small class="text-muted px-1">분석 도구</small>
+        </div>
+
+        <!-- 정책 시각화 -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="visualizer">
+                <i class="bi bi-diagram-3 me-2"></i>정책 시각화
+            </NavLink>
+        </div>
+
+        <!-- 정책 필터 -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="filter">
+                <i class="bi bi-funnel me-2"></i>정책 필터
+            </NavLink>
+        </div>
+
+        <!-- What-If 시뮬레이터 -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="whatif">
+                <i class="bi bi-play-circle me-2"></i>What-If 시뮬레이터
+            </NavLink>
+        </div>
+
+        <!-- 충돌 감지 -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="conflicts">
+                <i class="bi bi-exclamation-triangle me-2"></i>충돌 감지
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3 mt-2">
+            <small class="text-muted px-1">계정</small>
+        </div>
+
+        <!-- 로그아웃 -->
+        <div class="nav-item px-3">
+            <a class="nav-link" href="MicrosoftIdentity/Account/SignOut">
+                <i class="bi bi-box-arrow-right me-2"></i>로그아웃
+            </a>
+        </div>
+
+    </nav>
+</div>

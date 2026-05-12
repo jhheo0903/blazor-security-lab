@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <ResourcePreloader />
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["CAPolicyLab.styles.css"]" />
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <ImportMap />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet />
+</head>
+
+<body>
+    <Routes />
+    <ReconnectModal />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <!-- Mermaid.js: CA 정책 플로우차트 렌더링에 사용 -->
+    <!-- startOnLoad:false → Blazor JSInterop 에서 수동으로 렌더링 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#0d6efd',
+                primaryTextColor: '#ffffff',
+                primaryBorderColor: '#0a58ca',
+                lineColor: '#6c757d',
+                secondaryColor: '#e9ecef',
+                tertiaryColor: '#f8f9fa'
+            },
+            securityLevel: 'loose',   // Blazor 의 동적 콘텐츠 허용
+            flowchart: { curve: 'basis' }
+        });
+    </script>
+    <!-- Mermaid JSInterop 헬퍼 (MermaidDiagram.razor 에서 호출) -->
+    <script src="js/mermaid-interop.js"></script>
+</body>
+
+</html>
