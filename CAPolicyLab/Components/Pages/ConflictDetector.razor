@@ -1,6 +1,5 @@
 @page "/conflicts"
 @rendermode InteractiveServer
-@attribute [Authorize]
 
 <!--
     ConflictDetector.razor: CA 정책 간 잠재적 충돌을 감지하고 표시하는 페이지.
@@ -21,7 +20,11 @@
     </button>
 </div>
 
-@if (_loading)
+@if (_notConfigured)
+{
+    <ConfigGuard />
+}
+else if (_loading)
 {
     <div class="text-center py-5">
         <div class="spinner-border text-warning" role="status"></div>
@@ -30,8 +33,9 @@
 }
 else if (_error is not null)
 {
-    <div class="alert alert-danger">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>@_error
+    <div class="alert alert-danger d-flex align-items-start">
+        <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0 mt-1"></i>
+        <div>@_error</div>
     </div>
 }
 else
@@ -186,17 +190,25 @@ else
 }
 
 @code {
-    [Inject] private GraphService GraphService { get; set; } = null!;
-    [Inject] private PolicyAnalyzerService Analyzer { get; set; } = null!;
+    [Inject] private GraphService          GraphService   { get; set; } = null!;
+    [Inject] private PolicyAnalyzerService Analyzer      { get; set; } = null!;
+    [Inject] private AppConfigService      ConfigService { get; set; } = null!;
 
     private List<ConditionalAccessPolicyModel> _policies = [];
     private List<PolicyConflict> _conflicts = [];
     private ConflictSeverity? _severityFilter;
     private bool _loading = true;
+    private bool _notConfigured;
     private string? _error;
 
     protected override async Task OnInitializedAsync()
     {
+        if (ConfigService.GetStatus() != ConfigStatus.Configured)
+        {
+            _notConfigured = true;
+            _loading       = false;
+            return;
+        }
         await AnalyzeAsync();
     }
 

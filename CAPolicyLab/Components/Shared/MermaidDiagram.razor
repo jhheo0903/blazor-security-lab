@@ -1,59 +1,72 @@
 @inject IJSRuntime JS
 
-<!--
-    MermaidDiagram.razor: Mermaid.js 다이어그램 렌더링 컴포넌트
-
-    사용 방법:
-      <MermaidDiagram Definition="@mermaidText" />
-
-    동작 원리:
-      1. Definition 프로퍼티로 Mermaid 텍스트를 받음
-      2. OnAfterRenderAsync 에서 JSInterop 을 통해 mermaidInterop.render() 호출
-      3. JS 함수가 mermaid.render() → SVG 생성 → DOM 에 삽입
--->
-
 @if (!string.IsNullOrWhiteSpace(Definition))
 {
-    <div id="@_containerId" class="mermaid-container">
-        <!-- Mermaid JS 가 이 div 에 SVG 를 삽입함 -->
-        <div class="text-muted small text-center py-3">
-            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-            다이어그램 렌더링 중...
+    <div class="mermaid-wrapper" data-mermaid-id="@_containerId">
+
+        <!-- 툴바 -->
+        <div class="mermaid-toolbar">
+            <div class="d-flex align-items-center gap-1">
+                <button class="mermaid-btn" @onclick="ZoomIn" title="확대">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+                <button class="mermaid-btn" @onclick="ZoomOut" title="축소">
+                    <i class="bi bi-dash-lg"></i>
+                </button>
+                <span class="mermaid-zoom-pct">100%</span>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <button class="mermaid-btn" @onclick="FitToScreen" title="화면에 맞추기">
+                    <i class="bi bi-fullscreen"></i>
+                </button>
+                <button class="mermaid-btn" @onclick="ResetZoom" title="원래 크기 (100%)">
+                    <i class="bi bi-aspect-ratio"></i>
+                </button>
+            </div>
+            <span class="mermaid-hint">드래그 이동 · 휠 줌</span>
         </div>
+
+        <!-- 다이어그램 캔버스 -->
+        <div id="@_containerId" class="mermaid-container">
+            <div class="text-muted small text-center" style="padding:2rem 0;">
+                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                다이어그램 렌더링 중...
+            </div>
+        </div>
+
     </div>
 }
 else
 {
-    <div class="alert alert-secondary">다이어그램 데이터가 없습니다.</div>
+    <div class="alert alert-secondary small">다이어그램 데이터가 없습니다.</div>
 }
 
 @code {
-    /// <summary>Mermaid.js 다이어그램 정의 텍스트 (flowchart TD ... 등)</summary>
     [Parameter, EditorRequired]
     public string Definition { get; set; } = string.Empty;
 
-    // 컴포넌트마다 고유한 DOM ID 생성 (같은 페이지에 여러 개 사용 가능)
-    private string _containerId = $"mermaid-{Guid.NewGuid():N}";
+    private string _containerId    = $"mermaid-{Guid.NewGuid():N}";
     private string _prevDefinition = string.Empty;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Definition 이 바뀔 때마다 다시 렌더링
         if (Definition == _prevDefinition) return;
         _prevDefinition = Definition;
 
-        if (!string.IsNullOrWhiteSpace(Definition))
+        if (string.IsNullOrWhiteSpace(Definition)) return;
+
+        try
         {
-            try
-            {
-                // App.razor 에서 로드한 mermaid-interop.js 의 함수 호출
-                await JS.InvokeVoidAsync("mermaidInterop.render", _containerId, Definition);
-            }
-            catch (Exception ex)
-            {
-                // JSInterop 실패 시 콘솔에만 출력 (페이지 크래시 방지)
-                Console.WriteLine($"Mermaid 렌더링 실패: {ex.Message}");
-            }
+            await JS.InvokeVoidAsync("mermaidInterop.render", _containerId, Definition);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MermaidDiagram] 렌더링 실패: {ex.Message}");
         }
     }
+
+    private async Task ZoomIn()       => await JS.InvokeVoidAsync("mermaidInterop.zoomIn",       _containerId);
+    private async Task ZoomOut()      => await JS.InvokeVoidAsync("mermaidInterop.zoomOut",      _containerId);
+    private async Task ResetZoom()    => await JS.InvokeVoidAsync("mermaidInterop.resetZoom",    _containerId);
+    private async Task FitToScreen()  => await JS.InvokeVoidAsync("mermaidInterop.fitToScreen",  _containerId);
 }

@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Runtime.Serialization;
 using CAPolicyLab.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Graph;
@@ -68,6 +70,12 @@ public class GraphService(GraphServiceClient graphClient, IMemoryCache cache, IL
             logger.LogError(ex, "Graph API 에서 CA 정책 조회 실패. 상태코드: {StatusCode}", ex.ResponseStatusCode);
             throw new GraphServiceException("조건부 액세스 정책을 불러올 수 없습니다. 권한(Policy.Read.All)을 확인하세요.", ex);
         }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Graph API 인증 또는 연결 실패");
+            throw new GraphServiceException(
+                "Graph API 에 연결할 수 없습니다. /setup 에서 앱 인증 정보를 설정하세요.", ex);
+        }
     }
 
     // ── 사용자 ─────────────────────────────────────────────────────────────
@@ -103,6 +111,12 @@ public class GraphService(GraphServiceClient graphClient, IMemoryCache cache, IL
         {
             logger.LogError(ex, "Graph API 에서 사용자 목록 조회 실패");
             throw new GraphServiceException("사용자 목록을 불러올 수 없습니다. 권한(Directory.Read.All)을 확인하세요.", ex);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Graph API 인증 또는 연결 실패 (사용자 목록)");
+            throw new GraphServiceException(
+                "Graph API 에 연결할 수 없습니다. /setup 에서 앱 인증 정보를 설정하세요.", ex);
         }
     }
 
@@ -158,12 +172,12 @@ public class GraphService(GraphServiceClient graphClient, IMemoryCache cache, IL
             {
                 config.QueryParameters.Select = ["appId", "displayName"];
                 config.QueryParameters.Top = 999;
-                config.QueryParameters.Orderby = ["displayName"];
             });
 
             var result = response?.Value?
                 .Select(sp => (sp.AppId ?? "", sp.DisplayName ?? ""))
                 .Where(t => !string.IsNullOrEmpty(t.Item1))
+                .OrderBy(t => t.Item2, StringComparer.OrdinalIgnoreCase)
                 .ToList() ?? [];
 
             cache.Set(cacheKey, result, CacheDuration);
@@ -173,6 +187,12 @@ public class GraphService(GraphServiceClient graphClient, IMemoryCache cache, IL
         {
             logger.LogError(ex, "Graph API 에서 앱 목록 조회 실패");
             throw new GraphServiceException("애플리케이션 목록을 불러올 수 없습니다. 권한(Directory.Read.All)을 확인하세요.", ex);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Graph API 인증 또는 연결 실패 (앱 목록)");
+            throw new GraphServiceException(
+                "Graph API 에 연결할 수 없습니다. /setup 에서 앱 인증 정보를 설정하세요.", ex);
         }
     }
 
@@ -264,7 +284,8 @@ public class GraphService(GraphServiceClient graphClient, IMemoryCache cache, IL
         {
             model.GrantOperator = grant.Operator ?? "OR";
             model.GrantControls = grant.BuiltInControls?
-                .Select(c => c.ToString() ?? "")
+                .Where(c => c.HasValue)
+                .Select(c => GetEnumMemberValue(c!.Value))
                 .Where(s => !string.IsNullOrEmpty(s))
                 .ToList() ?? [];
         }
@@ -279,6 +300,15 @@ public class GraphService(GraphServiceClient graphClient, IMemoryCache cache, IL
         }
 
         return model;
+    }
+
+    // Kiota 생성 enum은 ToString()이 PascalCase를 반환하므로
+    // [EnumMember(Value = "...")] 속성에서 Graph API 실제 값(camelCase)을 추출한다.
+    private static string GetEnumMemberValue<T>(T value) where T : struct, Enum
+    {
+        var field = typeof(T).GetField(value.ToString()!);
+        return field?.GetCustomAttribute<EnumMemberAttribute>()?.Value
+               ?? value.ToString()!;
     }
 }
 

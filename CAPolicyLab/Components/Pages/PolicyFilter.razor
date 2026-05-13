@@ -1,6 +1,5 @@
 @page "/filter"
 @rendermode InteractiveServer
-@attribute [Authorize]
 
 <!--
     PolicyFilter.razor: 사용자/그룹/앱을 기준으로 적용될 정책을 필터링하는 페이지.
@@ -17,7 +16,11 @@
     <i class="bi bi-funnel text-primary me-2"></i>정책 필터
 </h1>
 
-@if (_loading)
+@if (_notConfigured)
+{
+    <ConfigGuard />
+}
+else if (_loading)
 {
     <div class="text-center py-5">
         <div class="spinner-border text-primary" role="status"></div>
@@ -26,8 +29,9 @@
 }
 else if (_error is not null)
 {
-    <div class="alert alert-danger">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>@_error
+    <div class="alert alert-danger d-flex align-items-start">
+        <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0 mt-1"></i>
+        <div>@_error</div>
     </div>
 }
 else
@@ -206,7 +210,8 @@ else
 }
 
 @code {
-    [Inject] private GraphService GraphService { get; set; } = null!;
+    [Inject] private GraphService     GraphService   { get; set; } = null!;
+    [Inject] private AppConfigService ConfigService { get; set; } = null!;
 
     private List<ConditionalAccessPolicyModel> _policies = [];
     private string _nameFilter = string.Empty;
@@ -215,10 +220,18 @@ else
     private string _appFilter = string.Empty;
     private string _userGroupFilter = string.Empty;
     private bool _loading = true;
+    private bool _notConfigured;
     private string? _error;
 
     protected override async Task OnInitializedAsync()
     {
+        if (ConfigService.GetStatus() != ConfigStatus.Configured)
+        {
+            _notConfigured = true;
+            _loading       = false;
+            return;
+        }
+
         try
         {
             _policies = await GraphService.GetPoliciesAsync();

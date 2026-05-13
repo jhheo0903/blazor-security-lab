@@ -1,6 +1,5 @@
 @page "/whatif"
 @rendermode InteractiveServer
-@attribute [Authorize]
 
 <!--
     WhatIfSimulator.razor: "사용자 X가 앱 Y에 접속하면 어떤 정책이 적용되나?" 시뮬레이션.
@@ -23,7 +22,11 @@
     정확한 결과는 <a href="https://entra.microsoft.com" target="_blank" class="alert-link">Entra 관리 센터 What-If</a>를 사용하세요.
 </div>
 
-@if (_loadingData)
+@if (_notConfigured)
+{
+    <ConfigGuard />
+}
+else if (_loadingData)
 {
     <div class="text-center py-5">
         <div class="spinner-border text-primary" role="status"></div>
@@ -32,8 +35,9 @@
 }
 else if (_dataError is not null)
 {
-    <div class="alert alert-danger">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>@_dataError
+    <div class="alert alert-danger d-flex align-items-start">
+        <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0 mt-1"></i>
+        <div>@_dataError</div>
     </div>
 }
 else
@@ -231,8 +235,9 @@ else
 }
 
 @code {
-    [Inject] private GraphService GraphService { get; set; } = null!;
-    [Inject] private PolicyAnalyzerService Analyzer { get; set; } = null!;
+    [Inject] private GraphService          GraphService   { get; set; } = null!;
+    [Inject] private PolicyAnalyzerService Analyzer      { get; set; } = null!;
+    [Inject] private AppConfigService      ConfigService { get; set; } = null!;
 
     private List<(string Id, string DisplayName, string Upn)> _users = [];
     private List<(string Id, string DisplayName)> _apps = [];
@@ -247,11 +252,19 @@ else
     private WhatIfResult? _result;
     private bool _showNotApplied;
     private bool _loadingData = true;
+    private bool _notConfigured;
     private bool _simulating;
     private string? _dataError;
 
     protected override async Task OnInitializedAsync()
     {
+        if (ConfigService.GetStatus() != ConfigStatus.Configured)
+        {
+            _notConfigured = true;
+            _loadingData   = false;
+            return;
+        }
+
         try
         {
             // 병렬로 데이터 조회 (성능 최적화)

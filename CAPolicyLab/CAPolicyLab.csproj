@@ -8,16 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!--
-      Microsoft.Identity.Web.MicrosoftGraph 를 사용하지 않는 이유:
-      해당 패키지(모든 버전)는 Graph.Core 2.x 의 IAuthenticationProviderOption 을
-      런타임에 참조한다. Microsoft.Graph 5.x 는 Graph.Core 3.x 를 로드하며
-      IAuthenticationProviderOption 이 제거되어 TypeLoadException 이 발생한다.
-      대신 ITokenAcquisition + Kiota BaseBearerTokenAuthenticationProvider 로
-      GraphServiceClient 를 수동 등록한다.
-    -->
-    <PackageReference Include="Microsoft.Identity.Web" Version="3.8.4" />
-    <PackageReference Include="Microsoft.Identity.Web.UI" Version="3.8.4" />
+    <!-- Azure.Identity: ClientSecretCredential 기반 앱 전용 인증 (클라이언트 자격 증명 흐름) -->
+    <PackageReference Include="Azure.Identity" Version="1.13.2" />
 
     <!-- Microsoft.Graph 최신판 (5.x는 Kiota 기반 Graph.Core 3.x 사용) -->
     <PackageReference Include="Microsoft.Graph" Version="5.105.0" />

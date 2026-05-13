@@ -1,0 +1,512 @@
+@page "/setup"
+@rendermode InteractiveServer
+@implements IDisposable
+
+<PageTitle>CAPolicyLab - 앱 설정</PageTitle>
+
+<!-- 헤더 + 단계 표시기 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="bi bi-gear-fill text-primary me-2"></i>앱 설정
+    </h1>
+    <div class="d-flex align-items-center gap-1">
+        @for (int i = 1; i <= 3; i++)
+        {
+            var s        = i;
+            var dotClass = _step >= s ? "bg-primary text-white" : "bg-light text-muted border";
+            var lineClr  = _step > i  ? "#0d6efd" : "#dee2e6";
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle d-flex align-items-center justify-content-center fw-semibold @dotClass"
+                     style="width:30px;height:30px;font-size:.8rem;">
+                    @if (_step > s)
+                    {
+                        <i class="bi bi-check"></i>
+                    }
+                    else
+                    {
+                        @s
+                    }
+                </div>
+                @if (i < 3)
+                {
+                    <div style="width:24px;height:2px;background:@lineClr;"></div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<!-- ── 1단계: 현황 확인 ─────────────────────────────────────────────────── -->
+@if (_step == 1)
+{
+    <div class="card shadow-sm">
+        <div class="card-header fw-semibold">
+            <i class="bi bi-info-circle me-2 text-primary"></i>현황 확인
+        </div>
+        <div class="card-body">
+            <p>
+                CAPolicyLab은 Microsoft Graph API를 통해 조건부 액세스 정책을 읽습니다.
+                개인 계정 로그인 없이 <strong>앱 권한(클라이언트 자격 증명 흐름)</strong>으로 동작하므로
+                Azure AD 앱 등록과 아래 권한이 필요합니다.
+            </p>
+
+            <h6 class="fw-semibold mt-3">필요한 Graph API 앱 권한</h6>
+            <div class="table-responsive mb-4">
+                <table class="table table-sm table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>권한</th><th>유형</th><th>용도</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>Policy.Read.All</code></td>
+                            <td><span class="badge bg-primary">애플리케이션</span></td>
+                            <td>조건부 액세스 정책 조회</td>
+                        </tr>
+                        <tr>
+                            <td><code>Directory.Read.All</code></td>
+                            <td><span class="badge bg-primary">애플리케이션</span></td>
+                            <td>사용자·그룹·앱 정보 조회</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h6 class="fw-semibold">현재 설정 상태</h6>
+            <ul class="list-unstyled mb-0">
+                <li class="mb-1">
+                    @if (_cfg.TenantId != "")
+                    {
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-x-circle text-danger me-2"></i>
+                    }
+                    <strong>TenantId</strong>
+                    <span class="text-muted ms-1">@(_cfg.TenantId != "" ? "(설정됨)" : "(미설정)")</span>
+                </li>
+                <li class="mb-1">
+                    @if (_cfg.ClientId != "")
+                    {
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-x-circle text-danger me-2"></i>
+                    }
+                    <strong>ClientId</strong>
+                    <span class="text-muted ms-1">@(_cfg.ClientId != "" ? "(설정됨)" : "(미설정)")</span>
+                </li>
+                <li>
+                    @if (_cfg.ClientSecret != "")
+                    {
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-x-circle text-danger me-2"></i>
+                    }
+                    <strong>ClientSecret</strong>
+                    <span class="text-muted ms-1">@(_cfg.ClientSecret != "" ? "(설정됨)" : "(미설정)")</span>
+                </li>
+            </ul>
+        </div>
+        <div class="card-footer">
+            <div class="d-flex flex-column flex-sm-row gap-2 justify-content-end align-items-sm-center">
+                <button class="btn btn-outline-secondary btn-sm" @onclick="GoManual">
+                    <i class="bi bi-keyboard me-1"></i>수동으로 입력
+                </button>
+                <button class="btn btn-primary" @onclick="StartAutoRegistration">
+                    <i class="bi bi-magic me-2"></i>전역 관리자로 자동 설정 시작
+                </button>
+            </div>
+            <p class="text-muted small mb-0 mt-2 text-end">
+                자동 설정은 전역 관리자 계정으로 로그인하여 앱 등록과 권한 부여를 자동으로 수행합니다.
+            </p>
+        </div>
+    </div>
+}
+else if (_step == 2 && _autoMode)
+{
+    <div class="card shadow-sm">
+        <div class="card-header fw-semibold">
+            <i class="bi bi-person-check me-2 text-primary"></i>전역 관리자 인증 및 앱 자동 등록
+        </div>
+        <div class="card-body">
+
+            @if (RegStatus == RegStatus.GettingCode)
+            {
+                <div class="d-flex align-items-center gap-3 text-muted py-3">
+                    <div class="spinner-border spinner-border-sm flex-shrink-0"></div>
+                    <span>Azure에서 인증 코드를 가져오는 중...</span>
+                </div>
+            }
+
+            @if (RegStatus == RegStatus.WaitingForUser && RegService.DeviceCode != null)
+            {
+                <div class="alert alert-primary mb-4">
+                    <div class="fw-semibold mb-2">
+                        <i class="bi bi-key me-2"></i>브라우저에서 인증이 필요합니다
+                    </div>
+                    <p class="mb-3">
+                        아래 주소를 열고 표시된 코드를 입력하세요.
+                        <strong>전역 관리자 계정</strong>으로 로그인해야 합니다.
+                    </p>
+                    <div class="mb-3">
+                        <a href="@RegService.DeviceCode.VerificationUri" target="_blank" rel="noopener"
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-box-arrow-up-right me-2"></i>@RegService.DeviceCode.VerificationUri
+                        </a>
+                    </div>
+                    <div class="d-flex align-items-end gap-4">
+                        <div>
+                            <div class="text-muted small mb-1">입력할 코드</div>
+                            <div class="font-monospace fw-bold" style="font-size:2.5rem;letter-spacing:.3rem;">
+                                @RegService.DeviceCode.UserCode
+                            </div>
+                        </div>
+                        <div class="text-muted small pb-1">
+                            만료: @RegService.DeviceCode.ExpiresOn.LocalDateTime.ToString("HH:mm:ss")
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (RegService.Progress.Count > 0)
+            {
+                <ul class="list-unstyled mb-3">
+                    @foreach (var msg in RegService.Progress)
+                    {
+                        <li class="small mb-1">@msg</li>
+                    }
+                </ul>
+            }
+
+            @if (IsProcessing)
+            {
+                <div class="d-flex align-items-center gap-2 text-muted small">
+                    <div class="spinner-border spinner-border-sm flex-shrink-0"></div>
+                    <span>처리 중...</span>
+                </div>
+            }
+
+            @if (RegStatus == RegStatus.Failed && RegService.Error != null)
+            {
+                <div class="alert alert-danger mt-3 mb-0">
+                    <i class="bi bi-x-circle-fill me-2"></i>@RegService.Error
+                </div>
+            }
+        </div>
+
+        @if (RegStatus == RegStatus.Failed)
+        {
+            <div class="card-footer d-flex gap-2">
+                <button class="btn btn-outline-secondary" @onclick="() => _step = 1">
+                    <i class="bi bi-arrow-left me-1"></i>이전
+                </button>
+                <button class="btn btn-primary" @onclick="StartAutoRegistration">
+                    <i class="bi bi-arrow-clockwise me-1"></i>다시 시도
+                </button>
+                <button class="btn btn-outline-secondary ms-auto" @onclick="GoManual">
+                    수동으로 입력
+                </button>
+            </div>
+        }
+    </div>
+}
+else if (_step == 2 && !_autoMode)
+{
+    <div class="card shadow-sm">
+        <div class="card-header fw-semibold">
+            <i class="bi bi-key me-2 text-primary"></i>인증 정보 직접 입력
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-4">
+                이미 Azure AD 앱이 있는 경우 아래에 직접 입력하세요.
+                앱이 없다면
+                <button class="btn btn-link p-0 small align-baseline" @onclick="StartAutoRegistration">자동 설정</button>을 사용하세요.
+            </p>
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-semibold">테넌트 ID <span class="text-danger">*</span></label>
+                    <input class="form-control font-monospace" @bind="_form.TenantId"
+                           placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+                    <div class="form-text">Entra ID &gt; 개요 &gt; 디렉터리(테넌트) ID</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-semibold">클라이언트 ID <span class="text-danger">*</span></label>
+                    <input class="form-control font-monospace" @bind="_form.ClientId"
+                           placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+                    <div class="form-text">앱 등록 &gt; 개요 &gt; 애플리케이션(클라이언트) ID</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-semibold">클라이언트 시크릿 <span class="text-danger">*</span></label>
+                    <input class="form-control" type="password" @bind="_form.ClientSecret"
+                           placeholder="앱 등록 > 인증서 및 암호에서 생성한 값" />
+                    <div class="form-text">앱 등록 &gt; 인증서 및 암호 &gt; 클라이언트 암호 &gt; 값</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-semibold">도메인 <span class="text-muted small fw-normal">(선택)</span></label>
+                    <input class="form-control" @bind="_form.Domain" placeholder="contoso.onmicrosoft.com" />
+                </div>
+            </div>
+
+            @if (_testMessage != null)
+            {
+                @if (_testOk)
+                {
+                    <div class="alert alert-success mt-3 mb-0 d-flex align-items-start">
+                        <i class="bi bi-check-circle-fill me-2 flex-shrink-0 mt-1"></i>
+                        <span>@_testMessage</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-danger mt-3 mb-0 d-flex align-items-start">
+                        <i class="bi bi-x-circle-fill me-2 flex-shrink-0 mt-1"></i>
+                        <span>@_testMessage</span>
+                    </div>
+                }
+            }
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <button class="btn btn-outline-secondary" @onclick="() => _step = 1">
+                <i class="bi bi-arrow-left me-1"></i>이전
+            </button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" @onclick="TestAsync" disabled="@_busy">
+                    @if (_busy && !_saving)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                    }
+                    연결 테스트
+                </button>
+                <button class="btn btn-primary" @onclick="SaveManualAsync" disabled="@_busy">
+                    @if (_saving)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                    }
+                    저장 <i class="bi bi-arrow-right ms-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+}
+else if (_step == 3)
+{
+    @if (DisplayConfig != null)
+    {
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-4">
+                <i class="bi bi-check-circle-fill text-success" style="font-size:3.5rem;"></i>
+                <h3 class="mt-3">앱 등록 완료!</h3>
+                <p class="text-muted">
+                    아래 값이 <strong>appsettings.Development.json</strong>에 저장되었습니다.
+                </p>
+            </div>
+            <div class="card-body pt-0">
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-4">
+                        <div class="card bg-light border-0">
+                            <div class="card-body py-2 px-3">
+                                <div class="text-muted small mb-1">TenantId</div>
+                                <div class="small font-monospace text-break">@DisplayConfig.TenantId</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="card bg-light border-0">
+                            <div class="card-body py-2 px-3">
+                                <div class="text-muted small mb-1">ClientId</div>
+                                <div class="small font-monospace text-break">@DisplayConfig.ClientId</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="card bg-light border-0">
+                            <div class="card-body py-2 px-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-muted small">ClientSecret</span>
+                                    <button class="btn btn-link btn-sm p-0 text-muted" @onclick="ToggleSecret">
+                                        @if (_showSecret)
+                                        {
+                                            <i class="bi bi-eye-slash small"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-eye small"></i>
+                                        }
+                                    </button>
+                                </div>
+                                @if (_showSecret)
+                                {
+                                    <div class="small font-monospace text-break">@DisplayConfig.ClientSecret</div>
+                                }
+                                else
+                                {
+                                    <div class="small text-muted">••••••••••••••••</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info small mb-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    아래 버튼을 클릭하면 세션이 새로 고침되어 저장된 설정이 즉시 반영됩니다.
+                </div>
+
+                <div class="d-flex justify-content-center">
+                    <button class="btn btn-primary btn-lg" @onclick="GoToDashboard">
+                        <i class="bi bi-speedometer2 me-2"></i>대시보드로 이동
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-x-circle-fill text-danger" style="font-size:3.5rem;"></i>
+                <h3 class="mt-3">저장 실패</h3>
+                <p class="text-muted">설정 파일 저장 중 오류가 발생했습니다.</p>
+                <button class="btn btn-outline-primary mt-2" @onclick="() => _step = 2">
+                    <i class="bi bi-arrow-left me-1"></i>다시 시도
+                </button>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Inject] private AppRegistrationService RegService    { get; set; } = null!;
+    [Inject] private AppConfigService       ConfigService { get; set; } = null!;
+    [Inject] private NavigationManager      Nav           { get; set; } = null!;
+
+    private int  _step      = 1;
+    private bool _autoMode  = true;
+    private bool _showSecret;
+
+    // Manual mode state
+    private AzureAdConfig _form         = new();
+    private bool          _busy;
+    private bool          _saving;
+    private bool          _testOk;
+    private string?       _testMessage;
+    private bool          _manualSaveOk;
+    private AzureAdConfig _cfg          = new();
+
+    // Computed properties — keep ternary expressions out of Razor attribute values
+    // to avoid nested double-quote parsing issues in Blazor.
+    private RegStatus      RegStatus     => RegService.Status;
+    private AzureAdConfig? DisplayConfig => _autoMode ? RegService.Result
+                                                      : (_manualSaveOk ? _form : null);
+    private bool IsProcessing => RegStatus == RegStatus.CreatingApp
+                              || RegStatus == RegStatus.GrantingPermissions
+                              || RegStatus == RegStatus.CreatingSecret
+                              || RegStatus == RegStatus.Saving;
+
+    protected override void OnInitialized()
+    {
+        _cfg  = ConfigService.GetCurrentConfig();
+        _form = new AzureAdConfig
+        {
+            TenantId     = _cfg.TenantId,
+            ClientId     = _cfg.ClientId,
+            ClientSecret = _cfg.ClientSecret,
+            Domain       = _cfg.Domain,
+        };
+
+        RegService.OnStateChanged += HandleRegStateChanged;
+
+        switch (RegService.Status)
+        {
+            case RegStatus.Done:
+                _step = 3; _autoMode = true;
+                break;
+            case RegStatus.Failed:
+                _step = 2; _autoMode = true;
+                break;
+            case RegStatus.GettingCode:
+            case RegStatus.WaitingForUser:
+            case RegStatus.CreatingApp:
+            case RegStatus.GrantingPermissions:
+            case RegStatus.CreatingSecret:
+            case RegStatus.Saving:
+                _step = 2; _autoMode = true;
+                break;
+        }
+    }
+
+    public void Dispose() => RegService.OnStateChanged -= HandleRegStateChanged;
+
+    private void HandleRegStateChanged()
+    {
+        _ = InvokeAsync(() =>
+        {
+            if (RegService.Status == RegStatus.Done && _step == 2 && _autoMode)
+                _step = 3;
+            StateHasChanged();
+        });
+    }
+
+    private void StartAutoRegistration()
+    {
+        _autoMode = true;
+        _step     = 2;
+        RegService.StartRegistration();
+    }
+
+    private void GoManual()
+    {
+        _autoMode = false;
+        _step     = 2;
+    }
+
+    private void ToggleSecret() => _showSecret = !_showSecret;
+
+    private async Task TestAsync()
+    {
+        if (!ValidateForm()) return;
+        _busy        = true;
+        _testMessage = null;
+        try
+        {
+            var (ok, msg) = await ConfigService.TestConnectionAsync(
+                _form.TenantId, _form.ClientId, _form.ClientSecret);
+            _testOk      = ok;
+            _testMessage = msg;
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task SaveManualAsync()
+    {
+        if (!ValidateForm()) return;
+        _busy    = true;
+        _saving  = true;
+        _testMessage = null;
+        try
+        {
+            _manualSaveOk = await ConfigService.SaveConfigAsync(_form);
+        }
+        finally { _busy = false; _saving = false; }
+        _step = 3;
+    }
+
+    private bool ValidateForm()
+    {
+        if (string.IsNullOrWhiteSpace(_form.TenantId)     ||
+            string.IsNullOrWhiteSpace(_form.ClientId)     ||
+            string.IsNullOrWhiteSpace(_form.ClientSecret))
+        {
+            _testOk      = false;
+            _testMessage = "TenantId, ClientId, ClientSecret을 모두 입력하세요.";
+            return false;
+        }
+        return true;
+    }
+
+    private void GoToDashboard() => Nav.NavigateTo("/", forceLoad: true);
+}
