@@ -38,7 +38,7 @@ flowchart LR
   A --> R[Routes.razor / Router]
   R --> V[RouteView]
   V --> L[MainLayout.razor]
-  L --> B[@Body]
+  L --> B["@Body"]
   B --> G["Pages/*.razor"]
 ```
 
