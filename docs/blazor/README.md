@@ -29,3 +29,9 @@
 - 해당 상세 문서 링크
 - 적용 근거 파일 경로
 - 실습 단계 또는 확인 방법
+
+## 참고: Razor 렌더링 흐름
+
+- 공통 흐름 요약: [../README.md](../README.md)
+- 렌더 모드 관점: [02-hosting-render-modes.md](02-hosting-render-modes.md)
+- 라우팅/레이아웃 관점: [03-components-routing.md](03-components-routing.md)

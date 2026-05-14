@@ -1,0 +1,28 @@
+@page "/prerender-probe"
+@rendermode InteractiveServer
+
+<PageTitle>Prerender Probe</PageTitle>
+
+<h1>Prerender Probe</h1>
+
+@if (!RendererInfo.IsInteractive)
+{
+    <p><em>Connecting to interactive server circuit...</em></p>
+}
+else
+{
+    <p><strong>Interactive connection is active.</strong></p>
+}
+
+<p role="status">Current count: @currentCount</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+@code {
+    private int currentCount;
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+}

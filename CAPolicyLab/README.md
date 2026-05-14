@@ -127,3 +127,17 @@ dotnet run --project CAPolicyLab.csproj
 ```
 
 실행 후 각 페이지를 이동하며 "상태 -> 렌더링" 흐름을 관찰하세요.
+
+## 테스트 방법
+
+1. 애플리케이션 실행 후 주요 페이지(Home, PolicyFilter, WhatIfSimulator)로 이동합니다.
+2. 입력값 변경 시 화면 반영이 기대대로 이루어지는지 확인합니다.
+3. 브라우저 개발자 도구 Network 탭에서 요청/응답과 오류 유무를 점검합니다.
+4. 예외 상황(빈 입력, 잘못된 값)을 만들어 검증 메시지와 오류 처리를 확인합니다.
+
+검증용 기본 명령:
+
+```bash
+dotnet build CAPolicyLab/CAPolicyLab.csproj
+dotnet run --project CAPolicyLab/CAPolicyLab.csproj
+```
