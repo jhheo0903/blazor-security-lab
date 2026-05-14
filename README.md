@@ -39,7 +39,7 @@ flowchart LR
   R --> V[RouteView]
   V --> L[MainLayout.razor]
   L --> B[@Body]
-  B --> G[Pages/*.razor]
+  B --> G["Pages/*.razor"]
 ```
 
 ## 학습 기준 섹션 코드
