@@ -1,0 +1,94 @@
+## Build output
+bin/
+obj/
+out/
+publish/
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!**/packages/build/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/*.code-workspace
+
+## Rider
+.idea/
+*.sln.iml
+
+## Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+coverage-report/
+
+## Publishing
+*.pubxml
+*.pubxml.user
+PublishProfiles/
+
+## Logs
+*.log
+logs/
+
+## Secrets & local config
+appsettings.Local.json
+appsettings.*.local.json
+secrets.json
+**/Properties/launchSettings.json
+
+## User secrets (dotnet user-secrets)
+**/secrets/**
+
+## Azure / cloud deploy
+.azure/
+ServiceFabricBackup/
+
+## Temporary files
+*.tmp
+*.temp
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+## Crash dumps & diagnostic files
+*.dmp
+*.diagsession
+*.psess
+
+## OS
+desktop.ini
+
+## Compiled Razor / Blazor intermediate
+*.g.cs
+*.g.i.cs
+_RazorDeclarationGeneratedDocuments/
+_RazorCSharpDocument/
+
+## Generated files
+**/*.AssemblyInfo.cs
+**/*.AssemblyAttributes.cs
+
+## Docker
+**/docker-compose*.override.yml
+
+## Entity Framework migrations (keep the actual migration files, ignore snapshots only if desired)
+# Uncomment below if you do NOT want to track EF snapshots:
+# **/Migrations/*Snapshot.cs
