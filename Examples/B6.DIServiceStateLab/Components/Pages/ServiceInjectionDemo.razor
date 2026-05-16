@@ -1,0 +1,45 @@
+﻿@page "/service-injection"
+@rendermode InteractiveServer
+@inject IPolicyService PolicyService
+
+<PageTitle>서비스 주입 Demo</PageTitle>
+<h2>서비스 주입하기</h2>
+
+<p>지시문을 통해 서비스를 주입받고 사용합니다.</p>
+
+@if (isLoading)
+{
+    <p><em>로딩 중...</em></p>
+}
+else
+{
+    <div class="alert alert-info">
+        <strong>정책 목록 (PolicyService 호출 결과):</strong>
+        <ul>
+            @foreach (var policy in policies)
+            {
+                <li>@policy</li>
+            }
+        </ul>
+    </div>
+}
+
+<button class="btn btn-primary" @onclick="LoadPolicies">다시 로드</button>
+
+@code {
+    private bool isLoading;
+    private List<string> policies = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPolicies();
+    }
+
+    private async Task LoadPolicies()
+    {
+        isLoading = true;
+        await Task.Delay(100);
+        policies = await PolicyService.GetPoliciesAsync();
+        isLoading = false;
+    }
+}

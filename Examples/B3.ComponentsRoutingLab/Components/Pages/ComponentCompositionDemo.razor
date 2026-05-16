@@ -1,0 +1,29 @@
+@page "/component-composition"
+@rendermode InteractiveServer
+
+<PageTitle>Component Composition Demo</PageTitle>
+
+<h1>Component Composition Demo</h1>
+
+<p>
+    This page composes shared components and handles child events with EventCallback.
+</p>
+
+<PolicyCard PolicyId="101" Description="Require MFA for administrators" OnApply="HandleApply" />
+<PolicyCard PolicyId="205" Description="Block legacy authentication clients" OnApply="HandleApply" />
+
+@if (selectedPolicyId.HasValue)
+{
+    <p class="alert alert-success" role="status">
+        Selected policy: <strong>@selectedPolicyId</strong>
+    </p>
+}
+
+@code {
+    private int? selectedPolicyId;
+
+    private void HandleApply(int policyId)
+    {
+        selectedPolicyId = policyId;
+    }
+}

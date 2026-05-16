@@ -1,0 +1,32 @@
+﻿@page "/basic-form"
+@rendermode InteractiveServer
+
+<PageTitle>기본 폼 Demo</PageTitle>
+<h2>기본 폼 입력과 상태 갱신</h2>
+
+<p>이중 바인딩을 사용해 입력값을 즉시 컴포넌트 상태에 반영합니다.</p>
+
+<div class="card">
+    <div class="card-body">
+        <div class="mb-3">
+            <label class="form-label">이름:</label>
+            <input type="text" class="form-control" @bind="name" placeholder="이름 입력" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">나이:</label>
+            <input type="number" class="form-control" @bind="age" min="0" max="120" />
+        </div>
+
+        <div class="alert alert-info">
+            <strong>현재 입력값:</strong>
+            <p>이름: @(string.IsNullOrEmpty(name) ? "(입력 없음)" : name)</p>
+            <p>나이: @age</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string name = "";
+    private int age = 0;
+}

@@ -1,0 +1,18 @@
+@page "/policy/{id:int}"
+
+<PageTitle>Route Parameter Demo</PageTitle>
+
+<h1>Route Parameter Demo</h1>
+
+<p>
+    Current policy id from route: <strong>@Id</strong>
+</p>
+
+<p>
+    Try navigating to <code>/policy/101</code> or <code>/policy/999</code>.
+</p>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+}

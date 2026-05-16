@@ -1,0 +1,35 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">B7</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="basic-form">
+                <span class="bi bi-pencil-square-nav-menu" aria-hidden="true"></span> 기본 폼
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="validation-simple">
+                <span class="bi bi-check-circle-nav-menu" aria-hidden="true"></span> 유효성 검사
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="form-submit">
+                <span class="bi bi-file-earmark-check-nav-menu" aria-hidden="true"></span> 폼 제출
+            </NavLink>
+        </div>
+    </nav>
+</div>

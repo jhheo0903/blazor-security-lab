@@ -1,0 +1,11 @@
+﻿@page "/counter"
+
+<PageTitle>Counter</PageTitle>
+<h2>카운터</h2>
+<p>현재 값: <strong>@currentCount</strong></p>
+<button class="btn btn-primary" @onclick="IncrementCount">클릭</button>
+
+@code {
+    private int currentCount = 0;
+    private void IncrementCount() => currentCount++;
+}

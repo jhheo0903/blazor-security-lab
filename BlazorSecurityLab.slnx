@@ -1,6 +1,16 @@
 <Solution>
   <Folder Name="/Examples/">
-    <Project Path="Examples/B2.HostingRenderModesLab/B2.HostingRenderModesLab.csproj" />
+    <Project Path="Examples/B2-Server/B2-Server.csproj" />
+    <Project Path="Examples/B2-WebAssembly/B2-WebAssembly.csproj" />
+    <Project Path="Examples/B2-WebApp/B2-WebApp.csproj" />
+    <Project Path="Examples/B3.ComponentsRoutingLab/B3.ComponentsRoutingLab.csproj" />
+    <Project Path="Examples/B4.StateEventsBindingLab/B4.StateEventsBindingLab.csproj" />
+    <Project Path="Examples/B5.LifecycleLab/B5.LifecycleLab.csproj" />
+    <Project Path="Examples/B6.DIServiceStateLab/B6.DIServiceStateLab.csproj" />
+    <Project Path="Examples/B7.FormsValidationLab/B7.FormsValidationLab.csproj" />
+  </Folder>
+  <Folder Name="/Examples/B2-WebApp/">
+    <Project Path="Examples/B2-WebApp/B2-WebApp.Client/B2-WebApp.Client.csproj" />
   </Folder>
   <Project Path="CAPolicyLab/CAPolicyLab.csproj" />
 </Solution>

@@ -1,0 +1,23 @@
+﻿@page "/interactive-server"
+@rendermode InteractiveServer
+
+<PageTitle>Interactive Server Demo</PageTitle>
+<h2>Interactive Server 렌더 모드</h2>
+
+<p>SignalR circuit을 통해 서버에서 이벤트를 처리합니다.</p>
+
+<div class="alert alert-primary">
+    <strong>Interactive Server:</strong>
+    <ul>
+        <li>서버에서 코드 실행</li>
+        <li>SignalR 실시간 연결 유지</li>
+        <li>클라이언트 .NET 런타임 불필요</li>
+    </ul>
+</div>
+
+<p>카운트: <strong>@count</strong></p>
+<button class="btn btn-primary" @onclick="() => count++">증가 (서버에서 처리)</button>
+
+@code {
+    private int count = 0;
+}

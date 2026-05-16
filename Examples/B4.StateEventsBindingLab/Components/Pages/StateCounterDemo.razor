@@ -1,0 +1,32 @@
+@page "/state-counter"
+@rendermode InteractiveServer
+
+<PageTitle>State Counter Demo</PageTitle>
+
+<h1>State Counter Demo</h1>
+
+<p role="status">Current count: <strong>@count</strong></p>
+<p>Status: @statusMessage</p>
+
+<div class="d-flex gap-2">
+    <button class="btn btn-primary" @onclick="Increment">Increment</button>
+    <button class="btn btn-outline-secondary" @onclick="LoadAsync">Load Async</button>
+</div>
+
+@code {
+    private int count;
+    private string statusMessage = "Idle";
+
+    private void Increment()
+    {
+        count++;
+        statusMessage = "Increment event handled.";
+    }
+
+    private async Task LoadAsync()
+    {
+        statusMessage = "Loading...";
+        await Task.Delay(500);
+        statusMessage = "Completed";
+    }
+}

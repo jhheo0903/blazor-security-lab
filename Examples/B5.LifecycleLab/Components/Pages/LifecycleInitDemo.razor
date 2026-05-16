@@ -1,0 +1,38 @@
+﻿@page "/lifecycle-init"
+@rendermode InteractiveServer
+
+<PageTitle>OnInitialized Demo</PageTitle>
+<h2>OnInitialized / OnInitializedAsync</h2>
+
+<p>컴포넌트가 처음 렌더링될 때 실행되는 초기화 메서드입니다.</p>
+
+@if (isLoading)
+{
+    <p><em>데이터 로딩 중...</em></p>
+}
+else
+{
+    <ul>
+        @foreach (var item in items)
+        {
+            <li>@item</li>
+        }
+    </ul>
+}
+
+<p><strong>초기화 완료 시각:</strong> @initTime</p>
+
+@code {
+    private bool isLoading = true;
+    private List<string> items = new();
+    private string initTime = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        initTime = DateTime.Now.ToString("HH:mm:ss.fff") + " (OnInitializedAsync 진입)";
+        await Task.Delay(800); // 비동기 데이터 로딩 시뮬레이션
+        items = new List<string> { "정책 A", "정책 B", "정책 C" };
+        isLoading = false;
+        initTime += $" -> 완료: {DateTime.Now:HH:mm:ss.fff}";
+    }
+}

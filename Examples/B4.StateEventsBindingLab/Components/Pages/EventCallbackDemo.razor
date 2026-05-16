@@ -1,0 +1,27 @@
+@page "/event-callback"
+@rendermode InteractiveServer
+
+<PageTitle>Event Callback Demo</PageTitle>
+
+<h1>Event Callback Demo</h1>
+
+<p>
+    Child components send selected rule names to the parent through <code>EventCallback&lt;string&gt;</code>.
+</p>
+
+<RuleToggle RuleName="Require MFA" Description="Prompt all privileged users for MFA." OnApply="HandleApply" />
+<RuleToggle RuleName="Block Legacy Auth" Description="Deny legacy authentication protocols." OnApply="HandleApply" />
+
+@if (!string.IsNullOrWhiteSpace(lastSelectedRule))
+{
+    <p class="alert alert-success" role="status">Last selected rule: <strong>@lastSelectedRule</strong></p>
+}
+
+@code {
+    private string lastSelectedRule = string.Empty;
+
+    private void HandleApply(string ruleName)
+    {
+        lastSelectedRule = ruleName;
+    }
+}

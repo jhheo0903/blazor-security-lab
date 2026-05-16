@@ -1,0 +1,35 @@
+﻿@page "/lifecycle-dispose"
+@rendermode InteractiveServer
+@implements IDisposable
+
+<PageTitle>IDisposable Demo</PageTitle>
+<h2>IDisposable / 리소스 정리</h2>
+
+<p>컴포넌트가 제거될 때 <code>Dispose()</code>가 호출됩니다. 타이머, 이벤트 구독 등을 정리합니다.</p>
+
+<p><strong>경과 시간:</strong> @elapsed.ToString(@"mm\:ss")</p>
+<p><strong>상태:</strong> @disposeMessage</p>
+
+@code {
+    private System.Timers.Timer? _timer;
+    private TimeSpan elapsed = TimeSpan.Zero;
+    private string disposeMessage = "실행 중 (다른 페이지로 이동하면 Dispose 호출)";
+
+    protected override void OnInitialized()
+    {
+        _timer = new System.Timers.Timer(1000);
+        _timer.Elapsed += async (_, _) =>
+        {
+            elapsed = elapsed.Add(TimeSpan.FromSeconds(1));
+            await InvokeAsync(StateHasChanged);
+        };
+        _timer.Start();
+    }
+
+    public void Dispose()
+    {
+        _timer?.Stop();
+        _timer?.Dispose();
+        disposeMessage = "Dispose() 호출됨 - 타이머 정리 완료";
+    }
+}

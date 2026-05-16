@@ -1,0 +1,37 @@
+@page "/policies"
+@page "/policies/all"
+@page "/items/{Page:int?}"
+
+<PageTitle>Multi Route Demo</PageTitle>
+
+<h1>Multi Route Demo</h1>
+
+<p>
+    Matched route: <strong>@CurrentPath</strong>
+</p>
+
+@if (Page.HasValue)
+{
+    <p>Optional page parameter value: <strong>@Page.Value</strong></p>
+}
+else
+{
+    <p>Optional page parameter value: <em>not supplied</em></p>
+}
+
+<ul>
+    <li><a href="/policies">/policies</a></li>
+    <li><a href="/policies/all">/policies/all</a></li>
+    <li><a href="/items">/items</a></li>
+    <li><a href="/items/3">/items/3</a></li>
+</ul>
+
+@code {
+    [Inject]
+    private NavigationManager Nav { get; set; } = default!;
+
+    [Parameter]
+    public int? Page { get; set; }
+
+    private string CurrentPath => "/" + Nav.ToBaseRelativePath(Nav.Uri);
+}

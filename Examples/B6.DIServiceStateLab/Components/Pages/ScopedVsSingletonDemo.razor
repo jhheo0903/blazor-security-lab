@@ -1,0 +1,37 @@
+﻿@page "/scoped-vs-singleton"
+@rendermode InteractiveServer
+@inject ICounterService CounterService
+@inject IGlobalStateService GlobalState
+
+<PageTitle>Scoped vs Singleton Demo</PageTitle>
+<h2>Scoped vs Singleton 수명 차이</h2>
+
+<p><strong>Scoped (CounterService):</strong> 페이지 새로고침 시마다 새 인스턴스 → 카운트 초기화</p>
+<p><strong>Singleton (GlobalStateService):</strong> 앱 전체에서 같은 인스턴스 → 카운트 유지</p>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="alert alert-warning">
+            <strong>Scoped 서비스</strong>
+            <br />
+            <p>카운트: <strong>@CounterService.GetCount()</strong></p>
+            <p><small>인스턴스 ID: @CounterService.InstanceId</small></p>
+            <button class="btn btn-sm btn-primary" @onclick="() => CounterService.Increment()">증가</button>
+            <button class="btn btn-sm btn-secondary" @onclick="() => CounterService.Reset()">초기화</button>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="alert alert-success">
+            <strong>Singleton 서비스</strong>
+            <br />
+            <p>카운트: <strong>@GlobalState.GlobalCounter</strong></p>
+            <button class="btn btn-sm btn-primary" @onclick="() => GlobalState.IncrementGlobal()">증가</button>
+            <p><small>메시지: @GlobalState.Message</small></p>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info mt-3">
+    <strong>팁:</strong> 페이지를 새로고침하면 Scoped 카운트는 0으로 리셋되지만 Singleton 카운트는 유지됩니다.
+</div>

@@ -1,0 +1,53 @@
+﻿@page "/form-submit"
+@rendermode InteractiveServer
+
+<PageTitle>폼 제출 Demo</PageTitle>
+<h2>EditForm과 검증</h2>
+
+<p>EditForm 컴포넌트를 사용한 폼 제출과 자동 유효성 검사입니다.</p>
+
+<div class="card">
+    <div class="card-body">
+        <EditForm Model="form" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">이름:</label>
+                <InputText class="form-control" @bind-Value="form.Name" />
+                <ValidationMessage For="() => form.Name" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">이메일:</label>
+                <InputText type="email" class="form-control" @bind-Value="form.Email" />
+                <ValidationMessage For="() => form.Email" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">나이:</label>
+                <InputNumber class="form-control" @bind-Value="form.Age" />
+                <ValidationMessage For="() => form.Age" />
+            </div>
+
+            <button type="submit" class="btn btn-success">제출</button>
+        </EditForm>
+
+        @if (!string.IsNullOrEmpty(submitMessage))
+        {
+            <div class="alert alert-info mt-3">
+                @submitMessage
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private UserForm form = new();
+    private string submitMessage = "";
+
+    private void HandleSubmit()
+    {
+        submitMessage = $"성공! {form.Name}님의 정보가 저장되었습니다. 이메일: {form.Email}";
+    }
+}

@@ -1,0 +1,15 @@
+<div class="alert alert-info">
+    <strong>Interactive Auto:</strong>
+    <ul>
+        <li>초기: Interactive Server (빠른 응답)</li>
+        <li>WASM 다운로드 후: Interactive WebAssembly로 전환</li>
+        <li>재방문 시: 바로 WASM 사용</li>
+    </ul>
+</div>
+
+<p>카운트: <strong>@count</strong></p>
+<button class="btn btn-info" @onclick="() => count++">증가 (Auto 모드)</button>
+
+@code {
+    private int count = 0;
+}

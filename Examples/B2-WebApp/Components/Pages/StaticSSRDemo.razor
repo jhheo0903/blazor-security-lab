@@ -1,0 +1,19 @@
+﻿@page "/static"
+
+<PageTitle>Static SSR Demo</PageTitle>
+<h2>Static Server-Side Rendering</h2>
+
+<p>이 페이지는 렌더 모드를 지정하지 않아 서버에서 HTML만 생성 후 반환합니다.</p>
+
+<div class="alert alert-warning">
+    <strong>Static SSR:</strong>
+    <ul>
+        <li>버튼 클릭이나 입력 이벤트 처리 불가</li>
+        <li>서버에서 초기 HTML만 생성</li>
+        <li>SignalR 연결 없음</li>
+        <li>빠른 초기 로딩에 적합</li>
+    </ul>
+</div>
+
+<p>현재 서버 시각: <strong>@DateTime.Now.ToString("HH:mm:ss")</strong></p>
+<p><em>새로고침 하면 시각이 바뀌지만, 버튼 클릭으로는 바뀌지 않습니다.</em></p>

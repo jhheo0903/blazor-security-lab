@@ -1,0 +1,31 @@
+@page "/binding-live"
+@rendermode InteractiveServer
+
+<PageTitle>Binding Live Demo</PageTitle>
+
+<h1>Binding Live Demo</h1>
+
+<div class="mb-3">
+    <label class="form-label">Display name (oninput)</label>
+    <input class="form-control" @bind="displayName" @bind:event="oninput" />
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Price (format F2)</label>
+    <input class="form-control" type="number" step="0.01" @bind="price" @bind:event="oninput"/>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Policy start date</label>
+    <input class="form-control" type="date" @bind="startDate" @bind:format="yyyy-MM-dd" />
+</div>
+
+<p>Hello, <strong>@displayName</strong></p>
+<p>Price: @price.ToString("F2")</p>
+<p>Start date: @startDate.ToShortDateString()</p>
+
+@code {
+    private string displayName = "Policy Admin";
+    private decimal price = 1.50m;
+    private DateTime startDate = DateTime.Today;
+}

@@ -95,7 +95,17 @@ flowchart LR
 
 ## 현재 프로젝트 매핑
 
+### 메인 프로젝트
 - CAPolicyLab: [CAPolicyLab/README.md](CAPolicyLab/README.md)
-- B2.HostingRenderModesLab: [Examples/B2.HostingRenderModesLab/README.md](Examples/B2.HostingRenderModesLab/README.md)
+
+### 학습 예제 프로젝트 (Examples/)
+- B2-Server (Interactive Server): [Examples/B2-Server/README.md](Examples/B2-Server/README.md)
+- B2-WebAssembly (독립 WASM): [Examples/B2-WebAssembly/README.md](Examples/B2-WebAssembly/README.md)
+- B2-WebApp (혼합 렌더 모드): [Examples/B2-WebApp/README.md](Examples/B2-WebApp/README.md)
+- B3.ComponentsRoutingLab: [Examples/B3.ComponentsRoutingLab/README.md](Examples/B3.ComponentsRoutingLab/README.md)
+- B4.StateEventsBindingLab: [Examples/B4.StateEventsBindingLab/README.md](Examples/B4.StateEventsBindingLab/README.md)
+- B5.LifecycleLab: [Examples/B5.LifecycleLab/README.md](Examples/B5.LifecycleLab/README.md)
+- B6.DIServiceStateLab: [Examples/B6.DIServiceStateLab/README.md](Examples/B6.DIServiceStateLab/README.md)
+- B7.FormsValidationLab: [Examples/B7.FormsValidationLab/README.md](Examples/B7.FormsValidationLab/README.md)
 
 향후 프로젝트가 추가되면 동일한 형식으로 링크를 추가합니다.

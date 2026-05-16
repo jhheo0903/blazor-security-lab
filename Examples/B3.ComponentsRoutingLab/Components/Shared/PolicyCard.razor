@@ -1,0 +1,20 @@
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Policy @PolicyId</h5>
+        <p class="card-text">@Description</p>
+        <button class="btn btn-primary" @onclick="ApplyAsync">Apply</button>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int PolicyId { get; set; }
+
+    [Parameter]
+    public string Description { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<int> OnApply { get; set; }
+
+    private Task ApplyAsync() => OnApply.InvokeAsync(PolicyId);
+}

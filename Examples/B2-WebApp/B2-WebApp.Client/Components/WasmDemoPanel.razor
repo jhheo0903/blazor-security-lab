@@ -1,0 +1,15 @@
+<div class="alert alert-success">
+    <strong>Interactive WebAssembly:</strong>
+    <ul>
+        <li>브라우저에서 .NET 코드 실행</li>
+        <li>서버 연결 없이 동작</li>
+        <li>초기 WASM 번들 다운로드 필요</li>
+    </ul>
+</div>
+
+<p>카운트: <strong>@count</strong></p>
+<button class="btn btn-success" @onclick="() => count++">증가 (브라우저에서 처리)</button>
+
+@code {
+    private int count = 0;
+}
