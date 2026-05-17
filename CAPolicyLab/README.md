@@ -1,7 +1,9 @@
-# CAPolicyLab 실습 가이드
+# CAPolicyLab
 
-이 문서는 C# 개발자가 Blazor 사고방식으로 전환하도록 돕는 단계형 실습 가이드입니다.
-실습은 기능 구현보다 "생각의 연결"에 초점을 둡니다.
+[한국어](README.md) | [English](README.en.md)
+
+Blazor를 배우면서 Microsoft Entra ID 조건부 액세스(Conditional Access) 정책을 시각화해본 실습 프로젝트 기록입니다.
+기능 구현보다 "생각의 연결"에 초점을 두고, 컴포넌트 중심 사고를 직접 체험해보는 것이 목표였습니다.
 
 ## 루트 문서 연계
 

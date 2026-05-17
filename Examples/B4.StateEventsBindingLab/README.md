@@ -1,5 +1,7 @@
 # B4 State Events Binding Lab
 
+[한국어](README.md) | [English](README.en.md)
+
 이 프로젝트는 루트 기준서의 B4(상태, 이벤트, 데이터 바인딩)를 빠르게 체험하기 위한 최소 예제입니다.
 
 ## 루트 문서 연계

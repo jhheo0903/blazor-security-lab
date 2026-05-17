@@ -1,21 +1,21 @@
-# B9. 성능 최적화 포인트
+# B9. Performance Optimization
 
-[한국어](09-performance.md) | [English](09-performance.en.md)
+[한국어](09-performance.md) | English
 
-## 먼저 측정
+## Measure First
 
-최적화는 체감이 아니라 계측 기준으로 수행합니다.
-브라우저 DevTools Performance, .NET 진단 도구, Blazor 렌더 로그를 활용합니다.
+Optimize based on measurement, not intuition.
+Use browser DevTools Performance, .NET diagnostic tools, and Blazor render logs.
 
-- 렌더링 빈도 이상 여부
-- 네트워크 호출 횟수
-- 큰 목록 렌더 비용
+- Abnormal render frequency
+- Number of network calls
+- Cost of rendering large lists
 
-## 1. 불필요한 렌더링 방지
+## 1. Preventing Unnecessary Re-renders
 
-### ShouldRender override
+### ShouldRender Override
 
-상태 변경이 실제로 없을 때 렌더링을 건너뜁니다.
+Skip rendering when state hasn't actually changed.
 
 ```razor
 @code {
@@ -33,9 +33,9 @@
 }
 ```
 
-### @key 지시문
+### @key Directive
 
-목록 렌더링 시 항목을 추적해 불필요한 DOM 재생성을 방지합니다.
+Track list items during rendering to prevent unnecessary DOM recreation.
 
 ```razor
 @foreach (var item in items)
@@ -44,11 +44,11 @@
 }
 ```
 
-`@key`가 없으면 목록 변경 시 모든 항목을 재렌더링할 수 있습니다.
+Without `@key`, changing a list may re-render all items.
 
-## 2. 큰 목록 가상화 (Virtualize)
+## 2. Virtualization for Large Lists
 
-수천 개의 항목을 렌더링할 때 뷰포트에 보이는 항목만 렌더링합니다.
+When rendering thousands of items, only render what's visible in the viewport.
 
 ```razor
 <div style="height:500px; overflow-y:auto">
@@ -58,7 +58,7 @@
 </div>
 ```
 
-### 서버 측 데이터 페이징 연동
+### Server-Side Data Paging Integration
 
 ```razor
 <Virtualize Context="item"
@@ -68,7 +68,7 @@
 		<PolicyRow Item="item" />
 	</ItemContent>
 	<Placeholder>
-		<div>로딩 중...</div>
+		<div>Loading...</div>
 	</Placeholder>
 </Virtualize>
 
@@ -84,9 +84,9 @@
 }
 ```
 
-## 3. 스트리밍 렌더링 (Streaming Rendering)
+## 3. Streaming Rendering
 
-.NET 8+에서 Static SSR 페이지의 긴 작업을 스트리밍으로 분할합니다.
+In .NET 8+, split long-running operations on Static SSR pages using streaming.
 
 ```razor
 @page "/reports"
@@ -94,7 +94,7 @@
 
 @if (report is null)
 {
-	<p>보고서를 생성하는 중입니다...</p>
+	<p>Generating report...</p>
 }
 else
 {
@@ -111,7 +111,7 @@ else
 }
 ```
 
-## 4. 병렬 비동기 로드
+## 4. Parallel Async Loading
 
 ```razor
 @code {
@@ -131,11 +131,11 @@ else
 }
 ```
 
-## 5. 상태 변경 최소화
+## 5. Minimizing State Changes
 
 ```razor
 @code {
-	// 나쁜 예: 여러 번 상태 변경 -> 여러 번 렌더링 가능
+	// Bad: multiple state changes → potential multiple renders
 	private async Task BadUpdate()
 	{
 		isLoading = true;
@@ -143,31 +143,31 @@ else
 		isLoading = false;
 	}
 
-	// 좋은 예: 한 번에 상태 완성 후 종료
+	// Good: complete the state in one go before returning
 	private async Task GoodUpdate()
 	{
 		var loaded = await LoadAsync();
 		items = loaded;
 		isLoading = false;
-		// 이벤트 핸들러 종료 후 1회 StateHasChanged 자동 호출
+		// one automatic StateHasChanged call after event handler exits
 	}
 }
 ```
 
-## 렌더링 관점 체크리스트
+## Rendering Checklist
 
-- 같은 입력에서 매번 새 객체를 생성해 불필요 렌더를 유발하는가?
-- 목록에 `@key`를 사용하는가?
-- 큰 목록에 `<Virtualize>`를 사용하는가?
-- 초기 로딩에서 꼭 필요한 데이터만 먼저 가져오는가?
+- Does the same input create new objects every time, triggering unnecessary re-renders?
+- Is `@key` used on list items?
+- Is `<Virtualize>` used for large lists?
+- Is only the necessary data fetched first during initial load?
 
-## 실무 팁
+## Practical Tips
 
-- 성능 이슈는 페이지 단위가 아니라 사용자 시나리오 단위로 분석합니다.
-- 한 번에 여러 최적화를 적용하지 말고 단계적으로 검증합니다.
-- 최적화 전후 수치로 효과를 확인합니다.
+- Analyze performance issues at the user scenario level, not just the page level.
+- Apply optimizations one at a time and verify the effect incrementally.
+- Always confirm improvements with before/after measurements.
 
-## 참고
+## References
 
 - https://learn.microsoft.com/aspnet/core/blazor/performance
 - https://learn.microsoft.com/aspnet/core/blazor/components/virtualization

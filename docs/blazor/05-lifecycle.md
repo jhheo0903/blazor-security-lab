@@ -1,5 +1,7 @@
 # B5. 컴포넌트 생명주기
 
+[한국어](05-lifecycle.md) | [English](05-lifecycle.en.md)
+
 ## 생명주기 흐름
 
 ```

@@ -1,5 +1,7 @@
 ﻿# B2-WebApp
 
+[한국어](README.md) | [English](README.en.md)
+
 **문서**: `docs/blazor/02-hosting-render-modes.md`
 
 Blazor **Web App** 통합 모델 예제 프로젝트입니다. 페이지마다 다른 렌더 모드를 사용합니다.

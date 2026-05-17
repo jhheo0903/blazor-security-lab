@@ -1,21 +1,21 @@
-# B8. JS Interop 사용 원칙
+# B8. JS Interop Principles
 
-[한국어](08-js-interop.md) | [English](08-js-interop.en.md)
+[한국어](08-js-interop.md) | English
 
-## 언제 필요한가
+## When Is It Needed?
 
-- 브라우저 전용 API가 필요한 경우 (clipboard, localStorage, geolocation 등)
-- Blazor 기본 컴포넌트만으로 구현이 어려운 UI 위젯 연동 (차트, 에디터 등)
-- 기존 JS 자산을 재활용해야 하는 경우
+- When browser-only APIs are required (clipboard, localStorage, geolocation, etc.)
+- When integrating UI widgets that are hard to build with Blazor alone (charts, editors, etc.)
+- When reusing existing JS assets
 
-## C#에서 JS 호출
+## Calling JS from C#
 
-### InvokeVoidAsync (반환값 없음)
+### InvokeVoidAsync (no return value)
 
 ```razor
 @inject IJSRuntime JS
 
-<button @onclick="ShowAlert">알림</button>
+<button @onclick="ShowAlert">Alert</button>
 
 @code {
     private async Task ShowAlert()
@@ -25,7 +25,7 @@
 }
 ```
 
-### InvokeAsync (반환값 있음)
+### InvokeAsync (with return value)
 
 ```razor
 @inject IJSRuntime JS
@@ -38,9 +38,9 @@
 }
 ```
 
-## JS 모듈 사용 (권장 방식)
+## Using JS Modules (Recommended)
 
-전역 함수 대신 ES 모듈로 JS를 관리합니다. `wwwroot/js/` 에 파일을 배치합니다.
+Manage JS as ES modules instead of global functions. Place files in `wwwroot/js/`.
 
 ```javascript
 // wwwroot/js/myModule.js
@@ -73,7 +73,7 @@ export function focusElement(element) {
     {
         if (_module is not null)
         {
-            await _module.InvokeVoidAsync("showMessage", "모듈에서 호출");
+            await _module.InvokeVoidAsync("showMessage", "Called from module");
         }
     }
 
@@ -87,15 +87,15 @@ export function focusElement(element) {
 }
 ```
 
-## DOM 요소 참조 전달
+## Passing DOM Element References
 
-`ElementReference`를 JS로 전달해 직접 DOM 조작을 위임합니다.
+Pass `ElementReference` to JS to delegate direct DOM manipulation.
 
 ```razor
 @inject IJSRuntime JS
 
 <input @ref="inputRef" type="text" />
-<button @onclick="FocusInput">포커스</button>
+<button @onclick="FocusInput">Focus</button>
 
 @code {
     private ElementReference inputRef;
@@ -107,9 +107,9 @@ export function focusElement(element) {
 }
 ```
 
-## JS에서 C# 호출
+## Calling C# from JS
 
-`DotNetObjectReference`를 사용해 JS에서 C# 메서드를 역호출합니다.
+Use `DotNetObjectReference` to let JS call back into C# methods.
 
 ```razor
 @inject IJSRuntime JS
@@ -140,7 +140,7 @@ export function focusElement(element) {
 }
 ```
 
-## 서비스 추상화 예시
+## Service Abstraction Example
 
 ```csharp
 public interface IChartService
@@ -176,21 +176,21 @@ public sealed class ChartService : IChartService, IAsyncDisposable
 }
 ```
 
-## 설계 원칙
+## Design Principles
 
-- 인터롭 호출을 서비스로 감싸 컴포넌트 의존도 축소
-- 전역 함수 대신 ES 모듈 방식 사용
-- prerender 구간에서는 JS 호출 불가 → `OnAfterRenderAsync(firstRender)` 사용
-- `IJSObjectReference`, `DotNetObjectReference`는 반드시 Dispose
+- Wrap interop calls in a service to reduce component dependencies
+- Use ES modules instead of global functions
+- JS cannot be called during prerender — use `OnAfterRenderAsync(firstRender)`
+- Always Dispose `IJSObjectReference` and `DotNetObjectReference`
 
-## 체크리스트
+## Checklist
 
-- 호출 실패 시 fallback UX가 있는가?
-- JS 모듈 로드 시점이 렌더링 시점과 충돌하지 않는가?
-- `IJSObjectReference`, `DotNetObjectReference`를 Dispose하는가?
-- prerender 구간 보호가 되어 있는가?
+- Is there a fallback UX if a call fails?
+- Does the JS module load timing conflict with the rendering timing?
+- Are `IJSObjectReference` and `DotNetObjectReference` disposed?
+- Is the prerender phase properly guarded?
 
-## 참고
+## References
 
 - https://learn.microsoft.com/aspnet/core/blazor/javascript-interoperability/
 - https://learn.microsoft.com/aspnet/core/blazor/javascript-interoperability/call-javascript-from-dotnet

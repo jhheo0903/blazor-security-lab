@@ -1,18 +1,17 @@
-# B7. 폼, 유효성 검사, 예외 처리
+# B7. Forms, Validation, and Error Handling
 
-[한국어](07-forms-validation-errors.md) | [English](07-forms-validation-errors.en.md)
+[한국어](07-forms-validation-errors.md) | English
 
-## 기본 조합
+## Core Building Blocks
 
+Blazor form essentials:
 
-Blazor 폼의 핵심 구성요소:
+- `EditForm`: Form container, connected to a model
+- `DataAnnotationsValidator`: Validation based on model annotations
+- `ValidationSummary`: Displays all error messages
+- `ValidationMessage`: Displays errors for a specific field
 
-- `EditForm`: 폼 컨테이너, 모델과 연결
-- `DataAnnotationsValidator`: 모델 어노테이션 기반 검증
-- `ValidationSummary`: 전체 오류 목록 표시
-- `ValidationMessage`: 특정 필드 오류 표시
-
-## 기본 폼 예시
+## Basic Form Example
 
 ```razor
 <EditForm Model="model" OnValidSubmit="SubmitAsync" OnInvalidSubmit="HandleInvalid">
@@ -20,18 +19,18 @@ Blazor 폼의 핵심 구성요소:
     <ValidationSummary />
 
     <div>
-        <label>이름</label>
+        <label>Name</label>
         <InputText @bind-Value="model.Name" />
         <ValidationMessage For="() => model.Name" />
     </div>
 
     <div>
-        <label>나이</label>
+        <label>Age</label>
         <InputNumber @bind-Value="model.Age" />
         <ValidationMessage For="() => model.Age" />
     </div>
 
-    <button type="submit">저장</button>
+    <button type="submit">Save</button>
 </EditForm>
 
 @code {
@@ -46,33 +45,33 @@ Blazor 폼의 핵심 구성요소:
 
     public class FormModel
     {
-        [Required(ErrorMessage = "이름은 필수입니다.")]
-        [MaxLength(50, ErrorMessage = "최대 50자까지 입력 가능합니다.")]
+        [Required(ErrorMessage = "Name is required.")]
+        [MaxLength(50, ErrorMessage = "Maximum 50 characters allowed.")]
         public string Name { get; set; } = string.Empty;
 
-        [Range(1, 120, ErrorMessage = "1~120 사이의 숫자를 입력하세요.")]
+        [Range(1, 120, ErrorMessage = "Enter a number between 1 and 120.")]
         public int Age { get; set; }
     }
 }
 ```
 
-## 입력 컴포넌트 종류
+## Input Component Types
 
-| 컴포넌트 | 대응 타입 |
+| Component | Corresponding Type |
 | --- | --- |
 | `InputText` | `string` |
-| `InputNumber<T>` | `int`, `decimal`, `double` 등 |
+| `InputNumber<T>` | `int`, `decimal`, `double`, etc. |
 | `InputDate<T>` | `DateTime`, `DateOnly` |
 | `InputCheckbox` | `bool` |
-| `InputSelect<T>` | `enum`, `string` 등 |
-| `InputTextArea` | `string` (여러 줄) |
-| `InputFile` | 파일 업로드 |
+| `InputSelect<T>` | `enum`, `string`, etc. |
+| `InputTextArea` | `string` (multi-line) |
+| `InputFile` | File upload |
 
-### InputSelect 예시
+### InputSelect Example
 
 ```razor
 <InputSelect @bind-Value="model.Status">
-    <option value="">선택하세요</option>
+    <option value="">Select...</option>
     @foreach (var status in Enum.GetValues<PolicyStatus>())
     {
         <option value="@status">@status</option>
@@ -80,7 +79,7 @@ Blazor 폼의 핵심 구성요소:
 </InputSelect>
 ```
 
-## 커스텀 유효성 검사
+## Custom Validation
 
 ### IValidatableObject
 
@@ -95,14 +94,14 @@ public class DateRangeModel : IValidatableObject
         if (To <= From)
         {
             yield return new ValidationResult(
-                "종료일은 시작일 이후여야 합니다.",
+                "End date must be after start date.",
                 [nameof(To)]);
         }
     }
 }
 ```
 
-### EditContext로 수동 유효성 검사
+### Manual Validation with EditContext
 
 ```razor
 @code {
@@ -117,17 +116,17 @@ public class DateRangeModel : IValidatableObject
     private void ValidateManually()
     {
         var isValid = editContext!.Validate();
-        // isValid 기반 처리
+        // handle based on isValid
     }
 }
 ```
 
-## 예외 처리
+## Error Handling
 
-### 사용자 액션 경계에서 예외 포착
+### Catching Exceptions at Action Boundaries
 
 ```razor
-<button @onclick="SaveAsync">저장</button>
+<button @onclick="SaveAsync">Save</button>
 <p class="error">@errorMessage</p>
 
 @code {
@@ -142,21 +141,21 @@ public class DateRangeModel : IValidatableObject
         }
         catch (HttpRequestException ex)
         {
-            errorMessage = "서버 통신 오류가 발생했습니다.";
+            errorMessage = "A server communication error occurred.";
             Logger.LogError(ex, "Save failed");
         }
         catch (Exception ex)
         {
-            errorMessage = "예기치 않은 오류가 발생했습니다.";
+            errorMessage = "An unexpected error occurred.";
             Logger.LogError(ex, "Unexpected error");
         }
     }
 }
 ```
 
-### ErrorBoundary (컴포넌트 오류 격리)
+### ErrorBoundary (Isolating Component Errors)
 
-자식 컴포넌트에서 발생한 예외가 전체 페이지를 중단시키지 않도록 격리합니다.
+Prevents exceptions from a child component from crashing the entire page.
 
 ```razor
 <ErrorBoundary>
@@ -164,17 +163,17 @@ public class DateRangeModel : IValidatableObject
         <PolicyVisualizer Policy="selected" />
     </ChildContent>
     <ErrorContent Context="ex">
-        <p>오류가 발생했습니다: @ex.Message</p>
+        <p>An error occurred: @ex.Message</p>
     </ErrorContent>
 </ErrorBoundary>
 ```
 
-### 로딩 상태 패턴
+### Loading State Pattern
 
 ```razor
 @if (isLoading)
 {
-    <p>로딩 중...</p>
+    <p>Loading...</p>
 }
 else if (errorMessage is not null)
 {
@@ -199,7 +198,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = "데이터를 불러오지 못했습니다.";
+            errorMessage = "Failed to load data.";
             Logger.LogError(ex, "Failed to load policies");
         }
         finally
@@ -210,14 +209,14 @@ else
 }
 ```
 
-## 예외 처리 권장 원칙
+## Error Handling Principles
 
-- 사용자 액션 경계(저장/삭제/분석 실행)에서 예외 포착
-- UI에는 원인 중심 메시지 제공, 로그에는 상세 스택 기록
-- 실패 후 재시도 가능 상태로 화면 복구
-- 민감한 정보(스택 트레이스 등)는 UI에 노출하지 않음
+- Catch exceptions at user action boundaries (save, delete, analyze)
+- Show cause-focused messages in the UI; log detailed stacks
+- Restore the screen to a retryable state after failure
+- Never expose sensitive information (stack traces, etc.) in the UI
 
-## 참고
+## References
 
 - https://learn.microsoft.com/aspnet/core/blazor/forms/
 - https://learn.microsoft.com/aspnet/core/blazor/forms/validation

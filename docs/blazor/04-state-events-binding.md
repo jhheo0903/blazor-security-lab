@@ -1,5 +1,7 @@
 # B4. 상태, 이벤트, 데이터 바인딩
 
+[한국어](04-state-events-binding.md) | [English](04-state-events-binding.en.md)
+
 ## 상태와 렌더링
 
 Blazor에서 **상태(private field)가 바뀌면 UI가 자동으로 다시 렌더링**됩니다.

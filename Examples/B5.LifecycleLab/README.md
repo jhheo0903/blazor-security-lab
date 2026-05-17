@@ -1,5 +1,7 @@
 ﻿# B5.LifecycleLab
 
+[한국어](README.md) | [English](README.en.md)
+
 **문서**: `docs/blazor/05-lifecycle.md`
 
 Blazor 컴포넌트 생명주기 메서드 예제 프로젝트입니다.

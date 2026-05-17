@@ -1,5 +1,7 @@
 ﻿# B6.DIServiceStateLab
 
+[한국어](README.md) | [English](README.en.md)
+
 **문서**: `docs/blazor/06-di-services-state.md`
 
 Blazor의 의존성 주입(DI), 서비스 설계, 상태 관리를 다루는 예제 프로젝트입니다.

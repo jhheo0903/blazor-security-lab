@@ -1,6 +1,8 @@
 # Examples
 
-이 폴더는 Blazor 학습 기준서(B1~B10)에 대응하는 예제 프로젝트만 모아두는 위치입니다.
+[한국어](README.md) | [English](README.en.md)
+
+Blazor를 공부하면서 주제별로 직접 만들어본 예제 프로젝트 모음입니다.
 
 ## 프로젝트 목록
 

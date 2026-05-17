@@ -1,5 +1,7 @@
 ﻿# B7.FormsValidationLab
 
+[한국어](README.md) | [English](README.en.md)
+
 **문서**: `docs/blazor/07-forms-validation-errors.md`
 
 Blazor의 폼 입력, 데이터 바인딩, 유효성검사를 다루는 예제 프로젝트입니다.

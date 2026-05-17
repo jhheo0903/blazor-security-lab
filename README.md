@@ -1,14 +1,24 @@
-﻿# Blazor Security Lab
+# Blazor Security Lab
 
-이 문서는 특정 프로젝트 설명서가 아니라, Blazor를 처음 접하는 C# 개발자를 위한 공통 학습 기준서입니다.
-각 프로젝트는 이 문서를 기준으로 "무엇을 어떤 방식으로 적용했는지"를 프로젝트별 README에서 매핑해 설명합니다.
+[한국어](README.md) | [English](README.en.md)
 
-## 문서 사용법
+C# 개발자가 Blazor를 처음 배우면서 정리한 학습 기록 저장소입니다.
+기본 개념부터 실습 예제 프로젝트까지, 스터디하며 직접 만들어본 코드와 메모를 담고 있습니다.
+후반부에는 MS 보안 주제를 Blazor로 구현한 프로젝트도 포함되어 있습니다.
 
-1. 먼저 이 README에서 Blazor 전체 개념을 이해합니다.
-2. 다음으로 각 프로젝트의 README에서 이 개념이 어떻게 구현됐는지 확인합니다.
+## 이 저장소의 구성
 
-## Blazor 전체 흐름
+| 구분 | 내용 |
+| --- | --- |
+| `docs/blazor/` | 개념 정리 문서 (B1~B10) |
+| `Examples/` | 주제별 실습 예제 프로젝트 |
+| `CAPolicyLab/` | Entra ID 조건부 액세스 정책 시각화 실습 프로젝트 |
+
+---
+
+## Blazor 학습 흐름
+
+처음 Blazor를 접했을 때 어떤 순서로 공부했는지 정리한 흐름입니다.
 
 ```mermaid
 flowchart TD
@@ -21,9 +31,9 @@ flowchart TD
   G --> H[성능 최적화와 테스트]
 ```
 
-## Razor 화면 렌더링 흐름 (공통)
+## Razor 화면 렌더링 흐름
 
-Blazor Web App에서 화면이 렌더링될 때 기본 흐름은 아래와 같습니다.
+Blazor Web App에서 화면이 렌더링되는 기본 흐름입니다.
 
 1. `Program.cs`에서 `MapRazorComponents<App>()`로 루트 컴포넌트를 등록합니다.
 2. `Components/App.razor`가 HTML 셸과 `<Routes />`를 렌더링합니다.
@@ -42,12 +52,13 @@ flowchart LR
   B --> G["Pages/*.razor"]
 ```
 
-## 학습 기준 섹션 코드
+---
 
-아래 코드는 프로젝트 README에서 매핑 참조용으로 사용됩니다.
-각 항목을 클릭하면 기능별 상세 문서로 이동합니다.
+## 학습 주제별 문서 (B1~B10)
 
-| 코드 | 주제 | 상세 문서 |
+각 주제를 공부하면서 작성한 정리 문서입니다.
+
+| 코드 | 주제 | 문서 |
 | --- | --- | --- |
 | B1 | Blazor 기본 개념 | [docs/blazor/01-overview.md](docs/blazor/01-overview.md) |
 | B2 | 호스팅 모델과 렌더링 모드 | [docs/blazor/02-hosting-render-modes.md](docs/blazor/02-hosting-render-modes.md) |
@@ -60,45 +71,14 @@ flowchart LR
 | B9 | 성능 최적화 포인트 | [docs/blazor/09-performance.md](docs/blazor/09-performance.md) |
 | B10 | 코딩 스타일 가이드 | [docs/blazor/10-coding-style.md](docs/blazor/10-coding-style.md) |
 
-## 기능별 상세 문서
+전체 목록: [docs/blazor/README.md](docs/blazor/README.md)
 
-루트 문서는 개념 기준서, 상세 설명은 기능별 문서에서 확인합니다.
+---
 
-- 상세 인덱스: [docs/blazor/README.md](docs/blazor/README.md)
-- B1 상세: [docs/blazor/01-overview.md](docs/blazor/01-overview.md)
-- B2 상세: [docs/blazor/02-hosting-render-modes.md](docs/blazor/02-hosting-render-modes.md)
-- B3 상세: [docs/blazor/03-components-routing.md](docs/blazor/03-components-routing.md)
-- B4 상세: [docs/blazor/04-state-events-binding.md](docs/blazor/04-state-events-binding.md)
-- B5 상세: [docs/blazor/05-lifecycle.md](docs/blazor/05-lifecycle.md)
-- B6 상세: [docs/blazor/06-di-services-state.md](docs/blazor/06-di-services-state.md)
-- B7 상세: [docs/blazor/07-forms-validation-errors.md](docs/blazor/07-forms-validation-errors.md)
-- B8 상세: [docs/blazor/08-js-interop.md](docs/blazor/08-js-interop.md)
-- B9 상세: [docs/blazor/09-performance.md](docs/blazor/09-performance.md)
-- B10 상세: [docs/blazor/10-coding-style.md](docs/blazor/10-coding-style.md)
+## 실습 예제 프로젝트 (Examples/)
 
-## Microsoft 공식 문서 참고
+각 주제를 직접 실행해보며 만든 예제 프로젝트들입니다.
 
-- Render modes: https://learn.microsoft.com/aspnet/core/blazor/components/render-modes
-- Prerender: https://learn.microsoft.com/aspnet/core/blazor/components/prerender
-- Components lifecycle: https://learn.microsoft.com/aspnet/core/blazor/components/lifecycle
-- Forms and validation: https://learn.microsoft.com/aspnet/core/blazor/forms/validation
-- JS interop: https://learn.microsoft.com/aspnet/core/blazor/javascript-interoperability
-
-## 프로젝트 적용 매핑 원칙
-
-각 프로젝트 README는 아래 형태를 권장합니다.
-
-1. 이 프로젝트에서 사용하는 호스팅/렌더링 모드
-2. 루트 기준 섹션 코드(B1~B10) 중 어떤 항목을 적용하는지
-3. 적용 근거 코드 위치(Program.cs, Pages, Services 등)
-4. 학습자가 따라할 단계(구조 -> 상태 -> 서비스 -> 변경 -> 설명)
-
-## 현재 프로젝트 매핑
-
-### 메인 프로젝트
-- CAPolicyLab: [CAPolicyLab/README.md](CAPolicyLab/README.md)
-
-### 학습 예제 프로젝트 (Examples/)
 - B2-Server (Interactive Server): [Examples/B2-Server/README.md](Examples/B2-Server/README.md)
 - B2-WebAssembly (독립 WASM): [Examples/B2-WebAssembly/README.md](Examples/B2-WebAssembly/README.md)
 - B2-WebApp (혼합 렌더 모드): [Examples/B2-WebApp/README.md](Examples/B2-WebApp/README.md)
@@ -108,4 +88,24 @@ flowchart LR
 - B6.DIServiceStateLab: [Examples/B6.DIServiceStateLab/README.md](Examples/B6.DIServiceStateLab/README.md)
 - B7.FormsValidationLab: [Examples/B7.FormsValidationLab/README.md](Examples/B7.FormsValidationLab/README.md)
 
-향후 프로젝트가 추가되면 동일한 형식으로 링크를 추가합니다.
+---
+
+## MS 보안 실습 프로젝트
+
+Blazor 기본기를 익힌 후, Microsoft 보안 주제를 Blazor로 구현해본 프로젝트입니다.
+
+### CAPolicyLab
+
+Microsoft Entra ID의 **조건부 액세스(Conditional Access) 정책**을 시각화하고 학습하기 위한 Blazor 프로젝트입니다.
+
+- 프로젝트 문서: [CAPolicyLab/README.md](CAPolicyLab/README.md)
+
+---
+
+## 참고한 Microsoft 공식 문서
+
+- Render modes: https://learn.microsoft.com/aspnet/core/blazor/components/render-modes
+- Prerender: https://learn.microsoft.com/aspnet/core/blazor/components/prerender
+- Components lifecycle: https://learn.microsoft.com/aspnet/core/blazor/components/lifecycle
+- Forms and validation: https://learn.microsoft.com/aspnet/core/blazor/forms/validation
+- JS interop: https://learn.microsoft.com/aspnet/core/blazor/javascript-interoperability

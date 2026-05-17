@@ -1,5 +1,7 @@
 # B2. 호스팅 모델과 렌더링 모드
 
+[한국어](02-hosting-render-modes.md) | [English](02-hosting-render-modes.en.md)
+
 ## 공식 개념 요약(Microsoft docs 기준)
 
 Blazor Web App은 렌더 모드로 "실행 위치"와 "인터랙션 가능 여부"를 제어합니다.

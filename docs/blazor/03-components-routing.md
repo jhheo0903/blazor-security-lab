@@ -1,5 +1,7 @@
 # B3. 컴포넌트 구조와 라우팅
 
+[한국어](03-components-routing.md) | [English](03-components-routing.en.md)
+
 ## 권장 폴더 전략
 
 | 폴더 | 역할 |

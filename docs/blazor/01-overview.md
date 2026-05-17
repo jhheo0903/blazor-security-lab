@@ -1,5 +1,7 @@
 # B1. Blazor 기본 개념
 
+[한국어](01-overview.md) | [English](01-overview.en.md)
+
 ## 무엇이 다른가
 
 Blazor는 C#으로 웹 UI를 작성하는 컴포넌트 기반 프레임워크입니다.

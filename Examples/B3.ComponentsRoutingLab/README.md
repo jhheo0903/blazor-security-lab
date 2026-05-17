@@ -1,5 +1,7 @@
 # B3 Components Routing Lab
 
+[한국어](README.md) | [English](README.en.md)
+
 이 프로젝트는 루트 기준서의 B3(컴포넌트 구조와 라우팅)를 빠르게 체험하기 위한 최소 예제입니다.
 
 ## 루트 문서 연계

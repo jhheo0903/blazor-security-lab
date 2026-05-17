@@ -1,5 +1,7 @@
 ﻿# B2-Server
 
+[한국어](README.md) | [English](README.en.md)
+
 **문서**: `docs/blazor/02-hosting-render-modes.md`
 
 Blazor **Interactive Server** 호스팅 모델 예제 프로젝트입니다.
