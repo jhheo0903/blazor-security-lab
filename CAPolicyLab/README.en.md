@@ -2,140 +2,166 @@
 
 [한국어](README.md) | English
 
-A hands-on project log exploring Microsoft Entra ID Conditional Access (CA) policy visualization in Blazor.
-The focus is on connecting ideas rather than feature delivery — experiencing component-based thinking firsthand.
+A hands-on project that visualizes and analyzes Microsoft Entra ID Conditional Access (CA) policies using Blazor Interactive Server.
+Policies are fetched directly via the Graph API; conflict detection, What-If simulation, and Mermaid flowchart generation are all performed locally.
 
-## Root Document Mapping
+---
 
-Root reference: [README.md](../README.md)
+## Prerequisites
 
-| Code | Topic | Detail Doc | CAPolicyLab Application | Source File |
-| --- | --- | --- | --- | --- |
-| B2 | Hosting Models and Rendering Modes | [02-hosting-render-modes.md](../docs/blazor/02-hosting-render-modes.md) | Uses Interactive Server mode | [Program.cs](Program.cs) |
-| B3 | Component Structure and Routing | [03-components-routing.md](../docs/blazor/03-components-routing.md) | Pages/Shared separation, App/Routes routing setup | [Components/App.razor](Components/App.razor), [Components/Routes.razor](Components/Routes.razor) |
-| B4 | State, Events, Data Binding | [04-state-events-binding.md](../docs/blazor/04-state-events-binding.md) | State and event handling in page components | [Components/Pages](Components/Pages) |
-| B6 | DI, Services, State Management | [06-di-services-state.md](../docs/blazor/06-di-services-state.md) | Logic separated into a Services layer with DI | [Services](Services), [Program.cs](Program.cs) |
-| B10 | Coding Style Guide | [10-coding-style.md](../docs/blazor/10-coding-style.md) | Separation of component/service/model responsibilities | [Components](Components), [Models](Models), [Services](Services) |
+Familiarity with the concepts below will help you understand this project.
 
-## Hosting Model
+### Microsoft Entra ID / Azure AD
 
-CAPolicyLab runs as a Blazor Interactive Server app.
+| Concept | Description |
+|---|---|
+| **Tenant** | An organization-scoped Azure AD directory, identified by a TenantId (GUID) |
+| **App Registration** | Registering a client app in Entra ID so it can call APIs. Produces a ClientId |
+| **Client Credentials Flow** | An OAuth 2.0 flow that calls APIs using the app's own permissions — no user sign-in required. Uses a ClientSecret |
+| **Application Permissions** | Service-level permissions that require Admin Consent before they take effect |
 
-- Service registration: `AddInteractiveServerComponents`
-- Render mode mapping: `AddInteractiveServerRenderMode`
+Required application permissions for this project:
 
-Source location: [CAPolicyLab/Program.cs](Program.cs)
+- `Policy.Read.All` — read Conditional Access policies
+- `Directory.Read.All` — read users, groups, and app information
 
-```csharp
-builder.Services.AddRazorComponents()
-  .AddInteractiveServerComponents();
+### Conditional Access
 
-app.MapRazorComponents<App>()
-  .AddInteractiveServerRenderMode();
+A CA policy defines **who (Users/Groups)** · **which apps (Applications)** · **under what conditions (Platforms, Locations)** are subject to **which controls (Grant Controls)**.
+
+| State | Meaning |
+|---|---|
+| `enabled` | Actively enforced. Access is blocked if controls are not satisfied |
+| `disabled` | Inactive. Excluded from policy evaluation |
+| `enabledForReportingButNotEnforced` | Report-Only. Logs the result but does not block access |
+
+Grant Controls examples: `mfa` (require MFA), `block` (deny access), `compliantDevice` (require compliant device)
+
+### Microsoft Graph API
+
+A REST-based API for querying and managing Microsoft 365 / Azure AD resources.
+
+- CA policy endpoint: `GET /identity/conditionalAccess/policies`
+- Users: `GET /users`
+- Service principals (apps): `GET /servicePrincipals`
+- Transitive group membership: `GET /users/{id}/transitiveMemberOf`
+
+This project uses Graph SDK v5 (Kiota-based). Paginated responses are fully collected using `PageIterator`.
+
+### Blazor Interactive Server
+
+UI events are processed on the server and communicated to the browser over SignalR.
+Key concepts: component lifecycle (`OnInitializedAsync`), two-way binding with `@bind`, dependency injection via `@inject`, and `@rendermode InteractiveServer`.
+
+---
+
+## Project Structure
+
+```
+CAPolicyLab/
+├── Program.cs                   # App entry point, DI registration, middleware pipeline
+├── Components/
+│   ├── App.razor / Routes.razor # Routing root
+│   ├── Layout/                  # MainLayout, NavMenu
+│   ├── Pages/
+│   │   ├── Home.razor           # Dashboard (KPI cards, policy list)
+│   │   ├── PolicyFilter.razor   # Filter by user / app
+│   │   ├── PolicyVisualizer.razor  # Policy Mermaid flowchart
+│   │   ├── ConflictDetector.razor  # Inter-policy conflict detection
+│   │   ├── WhatIfSimulator.razor   # Access policy simulation
+│   │   └── Setup.razor          # Azure AD credential configuration UI
+│   └── Shared/
+│       ├── PolicyCard.razor     # Reusable policy card component
+│       ├── ConfigGuard.razor    # Blocks access when app is not configured
+│       └── MermaidDiagram.razor # Mermaid.js rendering wrapper
+├── Services/
+│   ├── GraphService.cs          # Graph API calls + 5-minute memory cache
+│   ├── PolicyAnalyzerService.cs # Conflict detection, What-If, Mermaid generation (local)
+│   ├── AppConfigService.cs      # Read/write appsettings, connection test
+│   └── AppRegistrationService.cs
+└── Models/
+    ├── ConditionalAccessPolicyModel.cs  # Graph SDK type → internal view model
+    ├── PolicyConflict.cs
+    └── WhatIfResult.cs
 ```
 
-What this means:
-- UI event handling runs on the server.
-- The browser and server communicate via a persistent real-time connection.
-- In this project, observe state/rendering flow from a server-centric Blazor perspective.
+---
 
-## Learning Goals
+## Features
 
-- Build UI thinking around components
-- Understand the relationship between state changes and rendering
-- Separate UI code from service code by responsibility
+| Feature | Description |
+|---|---|
+| **Dashboard** | KPI cards for total / active / report-only policy counts, Grant Control distribution, detected conflicts |
+| **Policy Filter** | Filter the policy list by user ID, app ID, or state |
+| **Policy Visualizer** | Renders a single policy as a Mermaid flowchart (condition → control flow) |
+| **Conflict Detector** | Detects Block vs Allow, MFA vs No-MFA, and duplicate policies ranked by severity |
+| **What-If Simulator** | Predicts which policies apply to a user/app combination and the final access outcome |
+| **Setup Wizard** | Enter TenantId, ClientId, and ClientSecret from the browser UI and test the connection |
 
-## Practice Flow
+---
 
-```mermaid
-flowchart TD
-  A[1 Read Structure] --> B[2 Read State]
-  B --> C[3 Read Services]
-  C --> D[4 Make Changes]
-  D --> E[5 Explain It]
+## Tech Stack
 
-  A1[Check entry point in Program.cs] --> A
-  A2[Trace App.razor and Routes.razor] --> A
-  A3[Distinguish roles of Pages vs Shared] --> A
+| Item | Details |
+|---|---|
+| Runtime | .NET 10, Blazor Interactive Server |
+| Graph SDK | `Microsoft.Graph` 5.105.0 (Kiota-based) |
+| Auth | `Azure.Identity` 1.13.2 — `ClientSecretCredential` |
+| Cache | `IMemoryCache` (5-minute TTL) |
+| UI | Bootstrap 5, Bootstrap Icons, Mermaid.js |
 
-  B1[Find @code state variables] --> B
-  B2[Confirm @bind input connections] --> B
-  B3[Trace event handler execution paths] --> B
+---
 
-  C1[Locate @inject usage] --> C
-  C2[Trace service call flow] --> C
-  C3[Map Models to UI] --> C
+## Setup (Azure App Registration)
+
+### 1. Register an App
+
+1. [Azure Portal](https://portal.azure.com) → **Entra ID** → **App registrations** → **New registration**
+2. Give it a name and register. Copy the **Application (client) ID** and **Directory (tenant) ID**
+3. **Certificates & secrets** → create a new client secret. Copy the value immediately (it cannot be retrieved later)
+
+### 2. Grant API Permissions
+
+**API permissions** → **Add a permission** → **Microsoft Graph** → **Application permissions**, add the following, then click **Grant admin consent**:
+
+- `Policy.Read.All`
+- `Directory.Read.All`
+
+### 3. Enter Credentials
+
+After running the app, enter the values on the `/setup` page, or write them directly to `appsettings.Development.json`:
+
+```json
+{
+  "AzureAd": {
+    "TenantId": "your-tenant-id",
+    "ClientId": "your-client-id",
+    "ClientSecret": "your-client-secret"
+  }
+}
 ```
 
-## Step-by-Step Practice
+> The app runs without configuration. In the unconfigured state, a warning banner is shown on the dashboard and all Graph API calls are blocked.
 
-### Step 1: Read the Structure
-
-1. Check entry point: `Program.cs`
-2. Check routing: `Components/App.razor`, `Components/Routes.razor`
-3. Review screen groups: `Components/Pages`, `Components/Shared`
-
-Check questions:
-- Is the boundary between page components and reusable components clear?
-- Where is routing decided?
-
-### Step 2: Read State
-
-1. Open `Pages/Home.razor` or `Pages/PolicyFilter.razor`
-2. Identify state variables and event handlers first
-3. Trace which property each input value binds to
-
-Check questions:
-- Can you see all state change points at a glance?
-- Can you predict which UI changes when a given state changes?
-
-### Step 3: Read Services
-
-1. Open `Services/PolicyAnalyzerService.cs`
-2. Find the service call points in the page
-3. Trace how `Models/ConditionalAccessPolicyModel.cs` maps to the UI
-
-Check questions:
-- Is UI logic cleanly separated from domain logic?
-- Do the service method inputs/outputs match what the UI needs?
-
-### Step 4: Make Changes
-
-1. Add a small filter UI element to a page
-2. Add a display condition based on existing service results
-3. Verify the behavior before and after the change
-
-Check questions:
-- Was the change scope limited to within the component?
-- If service changes were needed, were they minimal?
-
-### Step 5: Explain It
-
-Try to explain the following in plain language:
-
-- What is the core state of this page?
-- Which event changes which state?
-- What maintenance benefit does service separation provide?
+---
 
 ## Running the App
 
 ```bash
 dotnet restore
-dotnet run --project CAPolicyLab.csproj
-```
-
-After launching, navigate between pages and observe the state → rendering flow.
-
-## Testing
-
-1. Run the app and navigate to the main pages (Home, PolicyFilter, WhatIfSimulator).
-2. Verify that changing input values updates the UI as expected.
-3. Check the browser DevTools Network tab for requests/responses and errors.
-4. Try edge cases (empty input, invalid values) and confirm validation messages and error handling.
-
-Build and run commands:
-
-```bash
-dotnet build CAPolicyLab/CAPolicyLab.csproj
 dotnet run --project CAPolicyLab/CAPolicyLab.csproj
 ```
+
+---
+
+## Root Document Mapping
+
+Root: [README.md](../README.md)
+
+| Code | Topic | Detail Doc | CAPolicyLab Application |
+|---|---|---|---|
+| B2 | Hosting Models and Rendering Modes | [02-hosting-render-modes.md](../docs/blazor/02-hosting-render-modes.md) | Interactive Server mode |
+| B3 | Component Structure and Routing | [03-components-routing.md](../docs/blazor/03-components-routing.md) | Pages/Shared separation, App/Routes |
+| B4 | State, Events, Data Binding | [04-state-events-binding.md](../docs/blazor/04-state-events-binding.md) | Page component state management |
+| B6 | DI, Services, State Management | [06-di-services-state.md](../docs/blazor/06-di-services-state.md) | Services layer DI separation |
+| B10 | Coding Style Guide | [10-coding-style.md](../docs/blazor/10-coding-style.md) | Component / service / model responsibility split |
