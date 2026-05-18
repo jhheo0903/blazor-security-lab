@@ -58,11 +58,11 @@ flowchart TD
   A2[Trace App.razor and Routes.razor] --> A
   A3[Distinguish roles of Pages vs Shared] --> A
 
-  B1[Find @code state variables] --> B
-  B2[Confirm @bind input connections] --> B
+  B1[Find "@code" state variables] --> B
+  B2[Confirm "@bind" input connections] --> B
   B3[Trace event handler execution paths] --> B
 
-  C1[Locate @inject usage] --> C
+  C1[Locate "@inject" usage] --> C
   C2[Trace service call flow] --> C
   C3[Map Models to UI] --> C
 ```

@@ -62,11 +62,11 @@ flowchart TD
   A2[App.razor Routes.razor 흐름 확인] --> A
   A3[Pages 와 Shared 역할 구분] --> A
 
-  B1[@code 상태 변수 찾기] --> B
-  B2[@bind 입력 연결 확인] --> B
+  B1["@code" 상태 변수 찾기] --> B
+  B2["@bind" 입력 연결 확인] --> B
   B3[이벤트 핸들러 실행 경로 추적] --> B
 
-  C1[@inject 위치 확인] --> C
+  C1["@inject" 위치 확인] --> C
   C2[Services 호출 흐름 확인] --> C
   C3[Models 와 UI 매핑 확인] --> C
 ```
